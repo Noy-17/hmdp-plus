@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one or more
+  ~ contributor license agreements.  See the NOTICE file distributed with
+  ~ this work for additional information regarding copyright ownership.
+  ~ The ASF licenses this file to You under the Apache License, Version 2.0
+  ~ (the "License"); you may not use this file except in compliance with
+  ~ the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  ~
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.javaup</groupId>
+    <artifactId>hmdp-plus</artifactId>
+    <version>${revision}</version>
+    <packaging>pom</packaging>
+
+    <name>${project.artifactId}</name>
+    <description>
+        🔥 🔥 热门推荐 🔥 🔥将黑马点评进行完全地重构升级，围绕优惠券秒杀与热点查询，补齐高并发稳定性、动态令牌、限流、消息可靠性与数据一致性闭环，并添加订阅通知、候补排队等新亮点功能，解决烂大街和亮点不足问题！并打造成真正企业级别实战项目，全面工程化落地。
+    </description>
+
+    <modules>
+        <module>hmdp-service-api</module>
+        <module>hmdp-common</module>
+        <module>hmdp-sharding</module>
+        <module>hmdp-core-service</module>
+        <module>hmdp-shop-service</module>
+        <module>hmdp-user-service</module>
+        <module>hmdp-voucher-service</module>
+        <module>hmdp-follow-service</module>
+        <module>hmdp-blog-service</module>
+        <module>hmdp-redisson-framework</module>
+        <module>hmdp-redis-tool-framework</module>
+        <module>hmdp-id-generator-framework</module>
+        <module>hmdp-mq-framework</module>
+        <module>hmdp-parameter</module>
+    </modules>
+
+    <properties>
+        <revision>0.0.1-SNAPSHOT</revision>
+        <java.version>21</java.version>
+        <project.sourceEncoding>UTF-8</project.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <spring-boot.version>4.0.6</spring-boot.version>
+        <fastjson.version>1.2.83</fastjson.version>
+        <oshi-core.version>6.2.2</oshi-core.version>
+        <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
+        <jdk.version>21</jdk.version>
+        <jasypt.version>3.0.5</jasypt.version>
+        <maven-compiler.version>3.8.1</maven-compiler.version>
+        <maven-resources.version>3.2.0</maven-resources.version>
+        <maven-source.version>3.2.1</maven-source.version>
+        <flatten-maven.version>1.4.1</flatten-maven.version>
+        <fastjson.version>2.0.9</fastjson.version>
+        <oshi-core.version>6.2.2</oshi-core.version>
+        <commons-lang.version>2.6</commons-lang.version>
+        <jjwt.version>0.9.1</jjwt.version>
+        <hutool.version>5.8.25</hutool.version>
+        <log4j.version>2.17.0</log4j.version>
+        <pagehelper.version>5.2.0</pagehelper.version>
+        <commons-collections.version>3.2.2</commons-collections.version>
+        <mybatis-plus.version>3.5.7</mybatis-plus.version>
+        <freemarker.version>2.3.29</freemarker.version>
+        <knife4j.version>4.3.0</knife4j.version>
+        <openapi.swagger.version>2.2.0</openapi.swagger.version>
+        <redisson.version>3.52.0</redisson.version>
+        <qps-helper.version>1.1.3-RELEASE</qps-helper.version>
+        <alipay-sdk-java-version>4.38.197.ALL</alipay-sdk-java-version>
+        <shardingsphere.version>5.3.2</shardingsphere.version>
+        <snakeyaml.version>1.33</snakeyaml.version>
+        <jaxb.version>2.3.0</jaxb.version>
+        <activation.version>1.1.1</activation.version>
+        <aviator.version>5.4.3</aviator.version>
+        <sa-token.version>1.43.0</sa-token.version>
+    </properties>
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+    </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter</artifactId>
+                <version>${spring-boot.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-starter-logging</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler.version}</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>${project.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${maven-resources.version}</version>
+                <configuration>
+                    <encoding>${project.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven-source.version}</version>
+                <configuration>
+                    <!--install、deploy时会上传源码jar包到仓库，默认是true-->
+                    <attach>true</attach>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-source</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>${flatten-maven.version}</version>
+                <configuration>
+                    <updatePomFile>true</updatePomFile>
+                </configuration>
+                <executions>
+                    <!-- enable flattening -->
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <!-- ensure proper cleanup -->
+                    <execution>
+                        <id>flatten.clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.javaup</groupId>
+        <artifactId>hmdp-redisson-framework</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>hmdp-redisson-service-framework</artifactId>
+    <name>hmdp-redisson-service-framework</name>
+    <description>分布式服务工具</description>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>hmdp-bloom-filter-framework</module>
+        <module>hmdp-redisson-common-framework</module>
+		<module>hmdp-service-lock-framework</module>
+        <module>hmdp-repeat-execute-limit-framework</module>
+    </modules>
+
+</project>

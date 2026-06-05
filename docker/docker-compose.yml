@@ -1,0 +1,136 @@
+services:
+  # ==================== MySQL 8.0 ====================
+  mysql:
+    image: mysql:8.0
+    container_name: hmdp-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./sql/1_create_database.sql:/docker-entrypoint-initdb.d/01_create_database.sql
+      - ./sql/hmdp_0.sql:/docker-entrypoint-initdb.d/02_hmdp_0.sql
+      - ./sql/hmdp_1.sql:/docker-entrypoint-initdb.d/03_hmdp_1.sql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ==================== Redis 7 ====================
+  redis:
+    image: redis:7-alpine
+    container_name: hmdp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ==================== RabbitMQ 4.x ====================
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: hmdp-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # ==================== Nacos ====================
+  nacos:
+    image: nacos/nacos-server:v2.4.3
+    container_name: hmdp-nacos
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: ip
+    volumes:
+      - nacos-data:/home/nacos/data
+      - nacos-logs:/home/nacos/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/"]
+      interval: 15s
+      retries: 10
+    restart: unless-stopped
+
+  # ==================== Sentinel Dashboard ====================
+  sentinel:
+    image: bladex/sentinel-dashboard:1.8.8
+    container_name: hmdp-sentinel
+    ports:
+      - "8081:8080"
+    environment:
+      JAVA_OPTS: "-Dserver.port=8080"
+    depends_on:
+      nacos:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ==================== Elasticsearch 8.x ====================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.16.3
+    container_name: hmdp-elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 15s
+      retries: 10
+    restart: unless-stopped
+
+  # ==================== Seata Server 1.8.0 ====================
+  seata:
+    image: seataio/seata-server:1.8.0
+    container_name: hmdp-seata
+    ports:
+      - "8091:8091"
+      - "7091:7091"
+    environment:
+      SEATA_IP: ${SEATA_IP:-192.168.137.128}
+      SEATA_PORT: 8091
+      STORE_MODE: file
+    volumes:
+      - ./seata-conf/registry.conf:/seata-server/resources/registry.conf
+    depends_on:
+      nacos:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  redis-data:
+  rabbitmq-data:
+  nacos-data:
+  nacos-logs:
+  es-data:
+  seata-data:

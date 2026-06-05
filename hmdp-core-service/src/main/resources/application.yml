@@ -1,0 +1,71 @@
+server:
+  port: 8085
+spring:
+  application:
+    name: hmdp-plus
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true  
+  datasource:
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    url: jdbc:shardingsphere:classpath:shardingsphere.yaml
+  data:
+    redis:
+      database: 0
+      host: 192.168.137.128
+      port: 6379
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+    servlet:
+      load-on-startup: 1    
+  jackson:
+    default-property-inclusion: non_null # JSON处理时忽略非空字段
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+    generator:
+      WRITE_NUMBERS_AS_STRINGS: true
+  rabbitmq:
+    host: 192.168.137.128
+    port: 5672
+    username: guest
+    password: guest
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        retry:
+          enabled: false
+mybatis-plus:
+  type-aliases-package: org.javaup.entity # 别名扫描包
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    local-cache-scope: statement
+logging:
+  level:
+    org.javaup: info
+    AUDIT: INFO
+  pattern:
+    dateformat: mm:ss.SSS
+bloom-filter:
+  filters:
+    shop:
+      name: shop-id-bloom
+      expected-insertions: 50000
+      false-probability: 0.01
+    voucher:
+      name: voucher-id-bloom
+      expected-insertions: 100000
+      false-probability: 0.01
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "prometheus,health,info"
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+      

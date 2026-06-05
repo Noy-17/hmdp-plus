@@ -1,0 +1,44 @@
+server:
+  port: 7091
+
+spring:
+  application:
+    name: seata-server
+
+logging:
+  console:
+    user:
+  log:
+    exceptionRate: 100
+
+console:
+  user:
+    username: seata
+    password: seata
+
+seata:
+  config:
+    type: nacos
+    nacos:
+      server-addr: nacos:8848
+      group: SEATA_GROUP
+      namespace:
+      data-id: seataServer.properties
+      username:
+      password:
+  registry:
+    type: nacos
+    nacos:
+      application: seata-server
+      server-addr: nacos:8848
+      group: SEATA_GROUP
+      namespace:
+      username:
+      password:
+  server:
+    service-port: 8091
+  security:
+    secretKey: SeataSecretKey0c382ef121d778043159209298fd40bf3850a017
+    tokenValidityInMilliseconds: 1800000
+    ignore:
+      urls: /,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/*.svg,/**/*.png,/**/*.jpeg,/**/*.ico,/api/v1/auth/login

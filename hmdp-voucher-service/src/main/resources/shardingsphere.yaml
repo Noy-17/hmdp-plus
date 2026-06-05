@@ -1,0 +1,131 @@
+# 如果 MySQL 不在本机，请修改 host / username / password
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://localhost:3306/hmdp_0?useUnicode=true&characterEncoding=UTF-8&rewriteBatchedStatements=true&allowMultiQueries=true&serverTimezone=Asia/Shanghai&autoReconnect=true
+    username: root
+    password: root
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://localhost:3306/hmdp_1?useUnicode=true&characterEncoding=UTF-8&rewriteBatchedStatements=true&allowMultiQueries=true&serverTimezone=Asia/Shanghai&autoReconnect=true
+    username: root
+    password: root
+
+rules:
+  - !SHARDING
+    tables:
+      tb_seckill_voucher:
+        actualDataNodes: ds_${0..1}.tb_seckill_voucher_${0..1}
+        databaseStrategy:
+          standard:
+            shardingColumn: voucher_id
+            shardingAlgorithmName: databaseSeckillVoucherModModel
+        tableStrategy:
+          standard:
+            shardingColumn: voucher_id
+            shardingAlgorithmName: tableSeckillVoucherModModel
+      tb_user_info:
+        actualDataNodes: ds_${0..1}.tb_user_info_${0..1}
+        databaseStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: databaseUserInfoModModel
+        tableStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: tableUserInfoModModel
+      tb_voucher:
+        actualDataNodes: ds_${0..1}.tb_voucher_${0..1}
+        databaseStrategy:
+          standard:
+            shardingColumn: id
+            shardingAlgorithmName: databaseVoucherModModel
+        tableStrategy:
+          standard:
+            shardingColumn: id
+            shardingAlgorithmName: tableVoucherModModel
+      tb_voucher_order:
+        actualDataNodes: ds_${0..1}.tb_voucher_order_${0..1}
+        databaseStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: databaseVoucherOrderModModel
+        tableStrategy:
+          standard:
+            shardingColumn: voucher_id
+            shardingAlgorithmName: tableVoucherOrderModModel
+      tb_voucher_order_router:
+        actualDataNodes: ds_${0..1}.tb_voucher_order_router_${0..1}
+        databaseStrategy:
+          standard:
+            shardingColumn: order_id
+            shardingAlgorithmName: databaseVoucherOrderRouterModModel
+        tableStrategy:
+          standard:
+            shardingColumn: order_id
+            shardingAlgorithmName: tableVoucherOrderRouterModModel
+      tb_voucher_reconcile_log:
+        actualDataNodes: ds_${0..1}.tb_voucher_reconcile_log_${0..1}
+        databaseStrategy:
+          standard:
+            shardingColumn: order_id
+            shardingAlgorithmName: databaseVoucherReconcileLogModModel
+        tableStrategy:
+          standard:
+            shardingColumn: order_id
+            shardingAlgorithmName: tableVoucherReconcileLogModModel
+    broadcastTables:
+      - tb_blog,tb_blog_comments,tb_follow,tb_rollback_failure_log,tb_shop,tb_shop_type,tb_sign
+    shardingAlgorithms:
+      databaseSeckillVoucherModModel:
+        type: MOD
+        props:
+          sharding-count: 2
+      tableSeckillVoucherModModel:
+        type: INLINE
+        props:
+          algorithm-expression: tb_seckill_voucher_${voucher_id.intdiv(2) % 2}
+      databaseUserInfoModModel:
+        type: MOD
+        props:
+          sharding-count: 2
+      tableUserInfoModModel:
+        type: INLINE
+        props:
+          algorithm-expression: tb_user_info_${user_id.intdiv(2) % 2}
+      databaseVoucherModModel:
+        type: MOD
+        props:
+          sharding-count: 2
+      tableVoucherModModel:
+        type: INLINE
+        props:
+          algorithm-expression: tb_voucher_${id.intdiv(2) % 2}
+      databaseVoucherOrderModModel:
+        type: MOD
+        props:
+          sharding-count: 2
+      tableVoucherOrderModModel:
+        type: MOD
+        props:
+          sharding-count: 2
+      databaseVoucherOrderRouterModModel:
+        type: HASH_MOD
+        props:
+          sharding-count: 2
+      tableVoucherOrderRouterModModel:
+        type: INLINE
+        props:
+          algorithm-expression: tb_voucher_order_router_${order_id.intdiv(2) % 2}
+      databaseVoucherReconcileLogModModel:
+        type: HASH_MOD
+        props:
+          sharding-count: 2
+      tableVoucherReconcileLogModModel:
+        type: INLINE
+        props:
+          algorithm-expression: tb_voucher_reconcile_log_${order_id.intdiv(2) % 2}
+props:
+  sql-show: true

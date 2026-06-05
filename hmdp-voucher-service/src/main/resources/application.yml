@@ -1,0 +1,73 @@
+server:
+  port: ${VOUCHER_SERVICE_PORT:8083}
+spring:
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+  application:
+    name: hmdp-voucher-service
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+  datasource:
+    driver-class-name: org.apache.shardingsphere.driver.ShardingSphereDriver
+    url: jdbc:shardingsphere:classpath:shardingsphere.yaml
+  data:
+    redis:
+      database: 0
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        retry:
+          enabled: false
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+    servlet:
+      load-on-startup: 1
+  jackson:
+    default-property-inclusion: non_null
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+    generator:
+      WRITE_NUMBERS_AS_STRINGS: true
+mybatis-plus:
+  type-aliases-package: org.javaup.entity
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    local-cache-scope: statement
+logging:
+  level:
+    org.javaup: info
+    AUDIT: INFO
+  pattern:
+    dateformat: mm:ss.SSS
+bloom-filter:
+  filters:
+    voucher:
+      name: voucher-id-bloom
+      expected-insertions: 100000
+      false-probability: 0.01
+seckill:
+  reminder:
+    ahead:
+      seconds: 120
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "prometheus,health,info"
+  prometheus:
+    metrics:
+      export:
+        enabled: true

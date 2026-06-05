@@ -1,0 +1,98 @@
+html {
+    font-size: 12px;
+    width: 100%;
+}
+body{
+    margin: 0;
+}
+html,body,#app{
+    height: 100%;
+}
+
+.el-tabs__item {
+    font-size: 14px;
+    font-weight: bold;
+}
+.el-tabs__active-bar {
+    height: 4px;
+    background-image: linear-gradient(to right, #F63, #f5b9a2);
+}
+.foot {
+    width: 100%;
+    min-height: 54px;
+    height: 8vh;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -1px 2px 1px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    background: #fff;
+}
+.foot .add-btn {
+    width: 38px;
+    height: 38px;
+    box-shadow: 0 0 3px 2px rgba(0, 0, 0, 0.1);
+    border-radius: 18px;
+}
+.foot-box{
+    width: 20%;
+    color: #82848a;
+    text-align: center;
+    position: relative;
+}
+.foot-view {
+    font-size: 22px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+/* 移除圆形背景，保留纯图标样式 */
+.foot-text{
+    font-size: 12px;
+    margin-top: 4px;
+}
+.foot-text, .foot-view{
+    text-align: center;
+}
+.active{
+    color: #ff6633;
+}
+
+/*element-ui的评价星星间隙*/
+.el-rate__icon {
+    margin-right: 0;
+}
+
+/* 秒杀确认遮罩的强化视觉效果 */
+.seckill-overlay {
+    z-index: 5000 !important;
+    backdrop-filter: blur(3px);
+}
+.seckill-overlay .el-loading-spinner {
+    padding: 24px 28px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+.seckill-overlay .el-loading-spinner .circular {
+    width: 64px;
+    height: 64px;
+    border-width: 6px;
+}
+.seckill-overlay .el-loading-spinner .path {
+    stroke: #fff;
+    opacity: 0.95;
+}
+.seckill-overlay .el-loading-text {
+    margin-top: 12px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+

@@ -1,0 +1,77 @@
+# 如果 MySQL 不在本机，请修改 host / username / password
+dataSources:
+  ds_0:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://localhost:3306/hmdp_0?useUnicode=true&characterEncoding=UTF-8&rewriteBatchedStatements=true&allowMultiQueries=true&serverTimezone=Asia/Shanghai&autoReconnect=true
+    username: root
+    password: root
+  ds_1:
+    dataSourceClassName: com.zaxxer.hikari.HikariDataSource
+    driverClassName: com.mysql.cj.jdbc.Driver
+    jdbcUrl: jdbc:mysql://localhost:3306/hmdp_1?useUnicode=true&characterEncoding=UTF-8&rewriteBatchedStatements=true&allowMultiQueries=true&serverTimezone=Asia/Shanghai&autoReconnect=true
+    username: root
+    password: root
+
+rules:
+  - !SHARDING
+    tables:
+      tb_user:
+        actualDataNodes: ds_${0..1}.tb_user_${0..1}
+        databaseStrategy:
+          standard:
+            shardingColumn: id
+            shardingAlgorithmName: databaseUserModModel
+        tableStrategy:
+          standard:
+            shardingColumn: id
+            shardingAlgorithmName: tableUserModModel
+      tb_user_info:
+        actualDataNodes: ds_${0..1}.tb_user_info_${0..1}
+        databaseStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: databaseUserInfoModModel
+        tableStrategy:
+          standard:
+            shardingColumn: user_id
+            shardingAlgorithmName: tableUserInfoModModel
+      tb_user_phone:
+        actualDataNodes: ds_${0..1}.tb_user_phone_${0..1}
+        databaseStrategy:
+          standard:
+            shardingColumn: phone
+            shardingAlgorithmName: databaseUserPhoneHashModModel
+        tableStrategy:
+          standard:
+            shardingColumn: phone
+            shardingAlgorithmName: tableUserPhoneHashModModel
+    broadcastTables:
+      - tb_blog,tb_blog_comments,tb_follow,tb_rollback_failure_log,tb_shop,tb_shop_type,tb_sign
+    shardingAlgorithms:
+      databaseUserModModel:
+        type: MOD
+        props:
+          sharding-count: 2
+      tableUserModModel:
+        type: INLINE
+        props:
+          algorithm-expression: tb_user_${id.intdiv(2) % 2}
+      databaseUserInfoModModel:
+        type: MOD
+        props:
+          sharding-count: 2
+      tableUserInfoModModel:
+        type: INLINE
+        props:
+          algorithm-expression: tb_user_info_${user_id.intdiv(2) % 2}
+      databaseUserPhoneHashModModel:
+        type: HASH_MOD
+        props:
+          sharding-count: 2
+      tableUserPhoneHashModModel:
+        type: INLINE
+        props:
+          algorithm-expression: tb_user_phone_${Math.abs(phone.hashCode()).intdiv(2) % 2}
+props:
+  sql-show: true
