@@ -1,6 +1,5 @@
 package org.javaup.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -9,10 +8,8 @@ import org.javaup.dto.Result;
 import org.javaup.dto.ScrollResult;
 import org.javaup.dto.UserDTO;
 import org.javaup.entity.Blog;
-import org.javaup.entity.Follow;
-import org.javaup.entity.User;
-import org.javaup.bridge.FollowBridge;
-import org.javaup.bridge.UserBridge;
+import org.javaup.feign.FollowFeignClient;
+import org.javaup.feign.UserFeignClient;
 import org.javaup.mapper.BlogMapper;
 import org.javaup.service.IBlogService;
 import org.javaup.toolkit.SnowflakeIdGenerator;
@@ -25,7 +22,10 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.javaup.utils.RedisConstants.BLOG_LIKED_KEY;
@@ -38,20 +38,20 @@ import static org.javaup.utils.RedisConstants.FEED_KEY;
  * - 点赞：Redis ZSet 存储，Toggle 模式（已赞→取消，未赞→点赞），同步更新 DB liked 计数
  * - Feed 流：发布笔记时推送到粉丝收件箱 (ZSet)，粉丝按时间线滚动拉取
  * - 点赞排行：ZSet 按时间排序，返回 Top5 点赞用户
- * - 跨域查询：通过 UserBridge 获取作者信息，FollowBridge 获取粉丝列表
+ * - 跨域查询：通过 OpenFeign 获取作者信息和粉丝列表
  */
 @Service
 public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IBlogService {
 
     @Resource
-    private UserBridge userBridge;
+    private UserFeignClient userFeignClient;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
     @Resource
-    private FollowBridge followBridge;
-    
+    private FollowFeignClient followFeignClient;
+
     @Resource
     private SnowflakeIdGenerator snowflakeIdGenerator;
 
@@ -146,11 +146,13 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         // 2.解析出其中的用户id
         List<Long> ids = top5.stream().map(Long::valueOf).collect(Collectors.toList());
         String idStr = StrUtil.join(",", ids);
-        // 3.根据用户id查询用户 WHERE id IN ( 5 , 1 ) ORDER BY FIELD(id, 5, 1)
-        List<UserDTO> userDTOS = userBridge.query()
-                .in("id", ids).last("ORDER BY FIELD(id," + idStr + ")").list()
-                .stream()
-                .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
+        // 3.根据用户id查询用户，Feign 批量查询后客户端重排序
+        List<UserDTO> userList = userFeignClient.listByIds(ids).getData();
+        Map<Long, UserDTO> userMap = userList.stream()
+                .collect(Collectors.toMap(UserDTO::getId, Function.identity()));
+        List<UserDTO> userDTOS = ids.stream()
+                .map(userMap::get)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         // 4.返回
         return Result.ok(userDTOS);
@@ -170,13 +172,11 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         if(!isSuccess){
             return Result.fail("新增笔记失败!");
         }
-        // 3.查询笔记作者的所有粉丝 select * from tb_follow where follow_user_id = ?
-        List<Follow> follows = followBridge.getFollowers(user.getId());
+        // 3.查询笔记作者的所有粉丝
+        List<Long> followerIds = followFeignClient.getFollowerIds(user.getId()).getData();
         // 4.推送笔记id给所有粉丝
-        for (Follow follow : follows) {
-            // 4.1.获取粉丝id
-            Long userId = follow.getUserId();
-            // 4.2.推送
+        for (Long userId : followerIds) {
+            // 4.1.推送
             String key = FEED_KEY + userId;
             stringRedisTemplate.opsForZSet().add(key, blog.getId().toString(), System.currentTimeMillis());
         }
@@ -238,8 +238,10 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
 
     private void queryBlogUser(Blog blog) {
         Long userId = blog.getUserId();
-        User user = userBridge.getById(userId);
-        blog.setName(user.getNickName());
-        blog.setIcon(user.getIcon());
+        UserDTO user = userFeignClient.getById(userId).getData();
+        if (user != null) {
+            blog.setName(user.getNickName());
+            blog.setIcon(user.getIcon());
+        }
     }
 }

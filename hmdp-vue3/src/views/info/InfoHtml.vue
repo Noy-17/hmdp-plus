@@ -6,7 +6,7 @@ import { ArrowLeft, Edit, ChatDotRound } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores'
 import { getUser, getUserBlog, getUserInfo } from '@/api/user'
 import {
-  indexQueryHotBlogsScroll,
+  queryBlogOfFollow,
   indexAddLike,
   indexQueryBlogById
 } from '@/api/user'
@@ -85,7 +85,7 @@ const queryBlogsOfFollow = (clear) => {
   const { offset: os } = params
 
   // 查询关注的用户的博客
-  indexQueryHotBlogsScroll(os)
+  queryBlogOfFollow({ lastId: params.minTime, offset: params.offset })
     .then(({ data }) => {
       if (!data) {
         return

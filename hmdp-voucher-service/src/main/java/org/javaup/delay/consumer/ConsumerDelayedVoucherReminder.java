@@ -9,8 +9,9 @@ import org.javaup.core.ConsumerTask;
 import org.javaup.core.RedisKeyManage;
 import org.javaup.core.SpringUtil;
 import org.javaup.delay.message.DelayedVoucherReminderMessage;
-import org.javaup.bridge.UserBridge;
-import org.javaup.entity.UserInfo;
+import org.javaup.dto.LevelQueryRequest;
+import org.javaup.dto.UserInfoDTO;
+import org.javaup.feign.UserInfoFeignClient;
 import org.javaup.model.SeckillVoucherFullModel;
 import org.javaup.redis.RedisCache;
 import org.javaup.redis.RedisKeyBuild;
@@ -45,7 +46,7 @@ public class ConsumerDelayedVoucherReminder implements ConsumerTask {
     private ISeckillVoucherService seckillVoucherService;
     
     @Resource
-    private UserBridge userBridge;
+    private UserInfoFeignClient userInfoFeignClient;
 
 
     @Value("${seckill.reminder.notify.sms.enabled:false}")
@@ -135,7 +136,7 @@ public class ConsumerDelayedVoucherReminder implements ConsumerTask {
         String allowedLevelsStr = voucherFull.getAllowedLevels();
         Integer minLevel = voucherFull.getMinLevel();
         Long shopId = voucherFull.getShopId();
-        List<UserInfo> userInfos = queryEligibleUserInfos(allowedLevelsStr, minLevel);
+        List<UserInfoDTO> userInfos = queryEligibleUserInfos(allowedLevelsStr, minLevel);
         Set<String> userIds = toUserIdSet(userInfos);
         if (topBuyersEnabled && Objects.nonNull(shopId)) {
             for (Long uid : readTopBuyersFromRedis(shopId, topBuyersCount, topBuyersDays)) {
@@ -149,82 +150,79 @@ public class ConsumerDelayedVoucherReminder implements ConsumerTask {
         return userIds;
     }
 
-    private List<UserInfo> queryEligibleUserInfos(String allowedLevelsStr, Integer minLevel) {
+    private List<UserInfoDTO> queryEligibleUserInfos(String allowedLevelsStr, Integer minLevel) {
         if (StrUtil.isNotBlank(allowedLevelsStr)) {
             Set<Integer> allowed = parseAllowedLevels(allowedLevelsStr);
             if (CollectionUtil.isNotEmpty(allowed)) {
                 List<Long> fromRedis = readUserIdsFromLevelSets(new ArrayList<>(allowed), maxNotifyUsers);
                 if (CollectionUtil.isNotEmpty(fromRedis)) {
-                    List<UserInfo> list = new ArrayList<>(fromRedis.size());
-                    for (Long uid : fromRedis) { 
-                        if (uid != null) { 
-                            UserInfo u = new UserInfo(); 
-                            u.setUserId(uid); 
+                    List<UserInfoDTO> list = new ArrayList<>(fromRedis.size());
+                    for (Long uid : fromRedis) {
+                        if (uid != null) {
+                            UserInfoDTO u = new UserInfoDTO();
+                            u.setUserId(uid);
                             list.add(u);
-                        } 
+                        }
                     }
                     return list;
                 }
-                return userBridge.lambdaQuery()
-                        .select(UserInfo::getUserId, UserInfo::getLevel)
-                        .in(UserInfo::getLevel, allowed)
-                        .last("limit " + maxNotifyUsers)
-                        .list();
+                LevelQueryRequest req = new LevelQueryRequest();
+                req.setLevels(allowed);
+                req.setLimit(maxNotifyUsers);
+                return userInfoFeignClient.listByLevels(req).getData();
             }
             int useMin = Objects.nonNull(minLevel) ? minLevel : defaultMinLevel;
             List<Long> fromRedis = readUserIdsFromLevelSets(buildLevelRange(useMin, maxUserLevel), maxNotifyUsers);
             if (CollectionUtil.isNotEmpty(fromRedis)) {
-                List<UserInfo> list = new ArrayList<>(fromRedis.size());
-                for (Long uid : fromRedis) { 
+                List<UserInfoDTO> list = new ArrayList<>(fromRedis.size());
+                for (Long uid : fromRedis) {
                     if (uid != null) {
-                        UserInfo u = new UserInfo(); 
-                        u.setUserId(uid); 
+                        UserInfoDTO u = new UserInfoDTO();
+                        u.setUserId(uid);
                         list.add(u);
-                    } 
+                    }
                 }
                 return list;
             }
-            return userBridge.lambdaQuery()
-                    .select(UserInfo::getUserId, UserInfo::getLevel)
-                    .ge(UserInfo::getLevel, useMin)
-                    .last("limit " + maxNotifyUsers)
-                    .list();
+            LevelQueryRequest req = new LevelQueryRequest();
+            req.setMinLevel(useMin);
+            req.setLimit(maxNotifyUsers);
+            return userInfoFeignClient.listByLevels(req).getData();
         }
         if (Objects.nonNull(minLevel)) {
             List<Long> fromRedis = readUserIdsFromLevelSets(buildLevelRange(minLevel, maxUserLevel), maxNotifyUsers);
             if (CollectionUtil.isNotEmpty(fromRedis)) {
-                List<UserInfo> list = new ArrayList<>(fromRedis.size());
-                for (Long uid : fromRedis) { 
-                    if (uid != null) { 
-                        UserInfo u = new UserInfo(); 
-                        u.setUserId(uid); list.add(u);
-                    } 
+                List<UserInfoDTO> list = new ArrayList<>(fromRedis.size());
+                for (Long uid : fromRedis) {
+                    if (uid != null) {
+                        UserInfoDTO u = new UserInfoDTO();
+                        u.setUserId(uid);
+                        list.add(u);
+                    }
                 }
                 return list;
             }
-            return userBridge.lambdaQuery()
-                    .select(UserInfo::getUserId, UserInfo::getLevel)
-                    .ge(UserInfo::getLevel, minLevel)
-                    .last("limit " + maxNotifyUsers)
-                    .list();
+            LevelQueryRequest req = new LevelQueryRequest();
+            req.setMinLevel(minLevel);
+            req.setLimit(maxNotifyUsers);
+            return userInfoFeignClient.listByLevels(req).getData();
         }
         List<Long> fromRedis = readUserIdsFromLevelSets(buildLevelRange(defaultMinLevel, maxUserLevel), maxNotifyUsers);
         if (CollectionUtil.isNotEmpty(fromRedis)) {
-            List<UserInfo> list = new ArrayList<>(fromRedis.size());
-            for (Long uid : fromRedis) { 
-                if (uid != null) { 
-                    UserInfo u = new UserInfo(); 
-                    u.setUserId(uid); 
+            List<UserInfoDTO> list = new ArrayList<>(fromRedis.size());
+            for (Long uid : fromRedis) {
+                if (uid != null) {
+                    UserInfoDTO u = new UserInfoDTO();
+                    u.setUserId(uid);
                     list.add(u);
-                } 
+                }
             }
             return list;
         }
-        return userBridge.lambdaQuery()
-                .select(UserInfo::getUserId, UserInfo::getLevel)
-                .ge(UserInfo::getLevel, defaultMinLevel)
-                .last("limit " + maxNotifyUsers)
-                .list();
+        LevelQueryRequest req = new LevelQueryRequest();
+        req.setMinLevel(defaultMinLevel);
+        req.setLimit(maxNotifyUsers);
+        return userInfoFeignClient.listByLevels(req).getData();
     }
 
     private List<Integer> buildLevelRange(int min, int max) {
@@ -290,10 +288,10 @@ public class ConsumerDelayedVoucherReminder implements ConsumerTask {
         return allowed;
     }
 
-    private Set<String> toUserIdSet(List<UserInfo> userInfos) {
+    private Set<String> toUserIdSet(List<UserInfoDTO> userInfos) {
         Set<String> userIds = new LinkedHashSet<>();
         if (CollectionUtil.isEmpty(userInfos)) { return userIds; }
-        for (UserInfo ui : userInfos) {
+        for (UserInfoDTO ui : userInfos) {
             if (Objects.nonNull(ui) && Objects.nonNull(ui.getUserId())) {
                 userIds.add(String.valueOf(ui.getUserId()));
             }

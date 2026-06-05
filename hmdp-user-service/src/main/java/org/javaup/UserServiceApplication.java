@@ -3,6 +3,7 @@ package org.javaup;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 /**
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  * 管理 tb_user / tb_user_info / tb_user_phone 三张分片表，提供注册登录和信息查询。
  */
 @EnableAspectJAutoProxy(exposeProxy = true)
+@EnableDiscoveryClient
 @MapperScan("org.javaup.mapper")
 @SpringBootApplication
 public class UserServiceApplication {

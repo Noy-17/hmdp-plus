@@ -18,8 +18,8 @@ import org.javaup.dto.GetVoucherOrderByVoucherIdDto;
 import org.javaup.dto.GetVoucherOrderDto;
 import org.javaup.dto.Result;
 import org.javaup.dto.VoucherReconcileLogDto;
+import org.javaup.dto.UserInfoDTO;
 import org.javaup.entity.SeckillVoucher;
-import org.javaup.entity.UserInfo;
 import org.javaup.entity.Voucher;
 import org.javaup.entity.VoucherOrder;
 import org.javaup.entity.VoucherOrderRouter;
@@ -41,7 +41,7 @@ import org.javaup.model.SeckillVoucherFullModel;
 import org.javaup.redis.RedisCacheImpl;
 import org.javaup.redis.RedisKeyBuild;
 import org.javaup.repeatexecutelimit.annotion.RepeatExecuteLimit;
-import org.javaup.bridge.UserBridge;
+import org.javaup.feign.UserInfoFeignClient;
 import org.javaup.service.ISeckillVoucherService;
 import org.javaup.service.IVoucherOrderRouterService;
 import org.javaup.service.IVoucherOrderService;
@@ -126,8 +126,8 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     private IVoucherOrderRouterService voucherOrderRouterService;
     
     @Resource
-    private UserBridge userBridge;
-    
+    private UserInfoFeignClient userInfoFeignClient;
+
     @Resource
     private VoucherOrderMapper voucherOrderMapper;
     
@@ -394,7 +394,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         if (!hasLevelRule) {
             return;
         }
-        UserInfo userInfo = userBridge.getByUserId(userId);
+        UserInfoDTO userInfo = userInfoFeignClient.getInfoByUserId(userId).getData();
         if (Objects.isNull(userInfo)) {
             throw new HmdpFrameException(BaseCode.USER_NOT_EXIST);
         }

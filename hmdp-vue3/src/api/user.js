@@ -16,6 +16,10 @@ export const indexQueryTypes = () => request.get('/shop-type/list')
 export const indexQueryHotBlogsScroll = (current) =>
   request.get('/blog/hot', null, { params: { current } })
 
+// 用户：获取关注用户的博客 Feed（滚动分页）
+export const queryBlogOfFollow = (params) =>
+  request.get('/blog/of/follow', { params })
+
 // 首页：点赞获取博客数据，点击查看更多
 export const indexAddLike = (id) => request.put('/blog/like/' + id)
 // 首页：获取博客数据

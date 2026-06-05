@@ -10,10 +10,10 @@
 |------|-------------|--------|
 | Spring Boot | 3.x | **4.0.6** |
 | 消息队列 | Kafka | **RabbitMQ 4.x** |
-| 架构 | 单体 | **5 个微服务** + 共享 API 模块 |
-| 跨域调用 | 进程内 | Bridge 模式 → OpenFeign（计划中） |
-| 服务发现 | 无 | Nacos（计划中） |
-| 网关 | 无 | Spring Cloud Gateway（计划中） |
+| 架构 | 单体 | **5 个微服务** + Gateway + 共享 API 模块 |
+| 跨域调用 | 进程内 | **OpenFeign**（Nacos 服务发现 + LoadBalancer） |
+| 服务发现 | 无 | **Nacos 2.4.3** |
+| 网关 | 无 | **Spring Cloud Gateway**（统一入口 :8080） |
 | 事务 | 本地事务 | Seata 分布式事务（计划中） |
 
 ### 5 个微服务
@@ -38,6 +38,9 @@
 | 限流 | 自研令牌桶 + 滑动窗口 |
 | ID 生成 | Snowflake 雪花算法 |
 | 鉴权 | Sa-Token 1.43.0 |
+| 服务发现 | Nacos 2.4.3 |
+| 远程调用 | OpenFeign |
+| 网关 | Spring Cloud Gateway (WebFlux, :8080) |
 | 前端 | Vue 3.5 + Vite 6 + Element Plus 2.9 + Pinia 3 |
 
 ## 原项目背景
@@ -128,13 +131,16 @@ cp .env.example .env
 ```bash
 mvn clean package -DskipTests
 
-# 5 个微服务，分别启动：
+# Gateway + 5 个微服务：
+java -jar hmdp-gateway/target/hmdp-gateway-0.0.1-SNAPSHOT.jar               # 网关 → :8080
 java -jar hmdp-shop-service/target/hmdp-shop-service-0.0.1-SNAPSHOT.jar     # 商铺 → :8081
 java -jar hmdp-user-service/target/hmdp-user-service-0.0.1-SNAPSHOT.jar     # 用户 → :8082
 java -jar hmdp-voucher-service/target/hmdp-voucher-service-0.0.1-SNAPSHOT.jar  # 秒杀 → :8083
 java -jar hmdp-blog-service/target/hmdp-blog-service-0.0.1-SNAPSHOT.jar     # 博客 → :8084
 java -jar hmdp-follow-service/target/hmdp-follow-service-0.0.1-SNAPSHOT.jar  # 关注 → :8085
 ```
+
+所有 API 请求通过 Gateway (`:8080`) 统一入口，Nacos 负责服务发现与负载均衡。
 
 ## 4. 启动前端
 

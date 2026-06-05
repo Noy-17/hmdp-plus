@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/follow")
 public class FollowController {
@@ -30,5 +32,10 @@ public class FollowController {
     @GetMapping("/common/{id}")
     public Result followCommons(@PathVariable("id") Long id){
         return followService.followCommons(id);
+    }
+
+    @GetMapping("/followers/{followUserId}")
+    public Result<List<Long>> getFollowerIds(@PathVariable Long followUserId) {
+        return followService.getFollowerIds(followUserId);
     }
 }

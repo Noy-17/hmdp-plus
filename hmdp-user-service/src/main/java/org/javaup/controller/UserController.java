@@ -5,8 +5,10 @@ import cn.hutool.core.bean.BeanUtil;
 import org.javaup.dto.LoginFormDTO;
 import org.javaup.dto.Result;
 import org.javaup.dto.UserDTO;
+import org.javaup.dto.UserInfoDTO;
 import org.javaup.entity.User;
 import org.javaup.entity.UserInfo;
+import org.javaup.dto.LevelQueryRequest;
 import org.javaup.service.IUserInfoService;
 import org.javaup.service.IUserService;
 import org.javaup.utils.UserHolder;
@@ -21,7 +23,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 用户服务控制器 —— 注册/登录、个人信息查询、签到统计。
@@ -74,17 +78,27 @@ public class UserController {
     }
 
     @GetMapping("/info/{id}")
-    public Result<UserInfo> info(@PathVariable("id") String userId){
-        // 查询详情
-        UserInfo info = userInfoService.getById(Long.parseLong(userId));
+    public Result<UserInfoDTO> info(@PathVariable("id") Long userId){
+        UserInfo info = userInfoService.getByUserId(userId);
         if (info == null) {
-            // 没有详情，应该是第一次查看详情
             return Result.ok();
         }
-        info.setCreateTime(null);
-        info.setUpdateTime(null);
-        // 返回
-        return Result.ok(info);
+        UserInfoDTO dto = new UserInfoDTO();
+        dto.setUserId(info.getUserId());
+        dto.setLevel(info.getLevel());
+        return Result.ok(dto);
+    }
+
+    @PostMapping("/info/by-levels")
+    public Result<List<UserInfoDTO>> listByLevels(@RequestBody LevelQueryRequest req) {
+        List<UserInfo> infos = userInfoService.listByLevels(req.getLevels(), req.getMinLevel(), req.getLimit());
+        List<UserInfoDTO> dtos = infos.stream().map(info -> {
+            UserInfoDTO dto = new UserInfoDTO();
+            dto.setUserId(info.getUserId());
+            dto.setLevel(info.getLevel());
+            return dto;
+        }).collect(Collectors.toList());
+        return Result.ok(dtos);
     }
 
     /**
@@ -109,6 +123,15 @@ public class UserController {
         UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
         // 返回
         return Result.ok(userDTO);
+    }
+
+    @PostMapping("/batch")
+    public Result<List<UserDTO>> listByIds(@RequestBody List<Long> ids) {
+        List<User> users = userService.listByIds(ids);
+        List<UserDTO> dtos = users.stream()
+                .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
+                .collect(Collectors.toList());
+        return Result.ok(dtos);
     }
 
     @PostMapping("/sign")

@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import org.javaup.dto.Result;
 import org.javaup.entity.UserInfo;
 
+import java.util.List;
+import java.util.Set;
+
 public interface IUserInfoService extends IService<UserInfo> {
     
     /**
@@ -20,5 +23,7 @@ public interface IUserInfoService extends IService<UserInfo> {
      * @return 结果
      */
     Result<Void> updateUserLevel(Long userId, Integer newLevel);
+
+    List<UserInfo> listByLevels(Set<Integer> levels, Integer minLevel, Integer limit);
 
 }

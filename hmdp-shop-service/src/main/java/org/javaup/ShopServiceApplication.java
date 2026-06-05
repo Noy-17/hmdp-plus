@@ -3,6 +3,7 @@ package org.javaup;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 /**
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  * 负责商铺缓存查询、GEO 地理位置搜索、布隆过滤器防穿透，零跨域依赖。
  */
 @EnableAspectJAutoProxy(exposeProxy = true)
+@EnableDiscoveryClient
 @MapperScan("org.javaup.mapper")
 @SpringBootApplication
 public class ShopServiceApplication {

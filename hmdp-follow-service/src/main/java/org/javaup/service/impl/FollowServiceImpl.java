@@ -1,14 +1,13 @@
 package org.javaup.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.javaup.dto.Result;
 import org.javaup.dto.UserDTO;
 import org.javaup.entity.Follow;
+import org.javaup.feign.UserFeignClient;
 import org.javaup.mapper.FollowMapper;
-import org.javaup.bridge.UserBridge;
 import org.javaup.service.IFollowService;
 import org.javaup.toolkit.SnowflakeIdGenerator;
 import org.javaup.utils.UserHolder;
@@ -30,7 +29,7 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     @Resource
     private StringRedisTemplate stringRedisTemplate;
     @Resource
-    private UserBridge userBridge;
+    private UserFeignClient userFeignClient;
     @Resource
     private SnowflakeIdGenerator snowflakeIdGenerator;
 
@@ -91,10 +90,18 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
         // 3.解析id集合
         List<Long> ids = intersect.stream().map(Long::valueOf).collect(Collectors.toList());
         // 4.查询用户
-        List<UserDTO> users = userBridge.listByIds(ids)
-                .stream()
-                .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
-                .collect(Collectors.toList());
+        List<UserDTO> users = userFeignClient.listByIds(ids).getData();
         return Result.ok(users);
+    }
+
+    @Override
+    public Result<List<Long>> getFollowerIds(Long followUserId) {
+        List<Follow> follows = lambdaQuery()
+                .eq(Follow::getFollowUserId, followUserId)
+                .list();
+        List<Long> ids = follows.stream()
+                .map(Follow::getUserId)
+                .collect(Collectors.toList());
+        return Result.ok(ids);
     }
 }

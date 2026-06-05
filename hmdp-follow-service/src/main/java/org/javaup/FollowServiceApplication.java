@@ -3,6 +3,9 @@ package org.javaup;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.javaup.feign.config.FeignAuthConfig;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 /**
@@ -10,6 +13,8 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  * 负责用户关注/取关/共同关注，通过 UserBridge 跨域读取用户数据。
  */
 @EnableAspectJAutoProxy(exposeProxy = true)
+@EnableDiscoveryClient
+@EnableFeignClients(basePackages = "org.javaup.feign", defaultConfiguration = FeignAuthConfig.class)
 @MapperScan("org.javaup.mapper")
 @SpringBootApplication
 public class FollowServiceApplication {

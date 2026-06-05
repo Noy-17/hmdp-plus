@@ -3,6 +3,9 @@ package org.javaup;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.javaup.feign.config.FeignAuthConfig;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 
@@ -14,6 +17,8 @@ import org.springframework.amqp.rabbit.annotation.EnableRabbit;
  * 是 5 个服务中唯一启用 {@code @EnableRabbit} 的服务。
  */
 @EnableAspectJAutoProxy(exposeProxy = true)
+@EnableDiscoveryClient
+@EnableFeignClients(basePackages = "org.javaup.feign", defaultConfiguration = FeignAuthConfig.class)
 @MapperScan("org.javaup.mapper")
 @SpringBootApplication
 @EnableRabbit

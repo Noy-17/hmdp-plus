@@ -17,7 +17,10 @@ import org.javaup.servicelock.annotion.ServiceLock;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.javaup.constant.DistributedLockConstants.UPDATE_USER_INFO_LOCK;
 
@@ -87,6 +90,24 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo> i
             log.error("维护用户等级集合失败 userId={} oldLevel={} newLevel={}", userId, oldLevel, newLevel, e);
         }
         return Result.ok();
+    }
+
+    @Override
+    public List<UserInfo> listByLevels(Set<Integer> levels, Integer minLevel, Integer limit) {
+        int effectiveLimit = limit != null ? limit : 1000;
+        if (levels != null && !levels.isEmpty()) {
+            return lambdaQuery()
+                    .select(UserInfo::getUserId, UserInfo::getLevel)
+                    .in(UserInfo::getLevel, levels)
+                    .last("limit " + effectiveLimit)
+                    .list();
+        }
+        int effectiveMin = minLevel != null ? minLevel : 1;
+        return lambdaQuery()
+                .select(UserInfo::getUserId, UserInfo::getLevel)
+                .ge(UserInfo::getLevel, effectiveMin)
+                .last("limit " + effectiveLimit)
+                .list();
     }
 
 }

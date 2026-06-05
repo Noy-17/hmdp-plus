@@ -3,13 +3,13 @@ dataSources:
   ds_0:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
-    jdbcUrl: jdbc:mysql://localhost:3306/hmdp_0?useUnicode=true&characterEncoding=UTF-8&rewriteBatchedStatements=true&allowMultiQueries=true&serverTimezone=Asia/Shanghai&autoReconnect=true
+    jdbcUrl: jdbc:mysql://192.168.137.128:3306/hmdp_0?useUnicode=true&characterEncoding=UTF-8&rewriteBatchedStatements=true&allowMultiQueries=true&serverTimezone=Asia/Shanghai&autoReconnect=true
     username: root
     password: root
   ds_1:
     dataSourceClassName: com.zaxxer.hikari.HikariDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
-    jdbcUrl: jdbc:mysql://localhost:3306/hmdp_1?useUnicode=true&characterEncoding=UTF-8&rewriteBatchedStatements=true&allowMultiQueries=true&serverTimezone=Asia/Shanghai&autoReconnect=true
+    jdbcUrl: jdbc:mysql://192.168.137.128:3306/hmdp_1?useUnicode=true&characterEncoding=UTF-8&rewriteBatchedStatements=true&allowMultiQueries=true&serverTimezone=Asia/Shanghai&autoReconnect=true
     username: root
     password: root
 
@@ -26,16 +26,6 @@ rules:
           standard:
             shardingColumn: voucher_id
             shardingAlgorithmName: tableSeckillVoucherModModel
-      tb_user_info:
-        actualDataNodes: ds_${0..1}.tb_user_info_${0..1}
-        databaseStrategy:
-          standard:
-            shardingColumn: user_id
-            shardingAlgorithmName: databaseUserInfoModModel
-        tableStrategy:
-          standard:
-            shardingColumn: user_id
-            shardingAlgorithmName: tableUserInfoModModel
       tb_voucher:
         actualDataNodes: ds_${0..1}.tb_voucher_${0..1}
         databaseStrategy:
@@ -77,7 +67,7 @@ rules:
             shardingColumn: order_id
             shardingAlgorithmName: tableVoucherReconcileLogModModel
     broadcastTables:
-      - tb_blog,tb_blog_comments,tb_follow,tb_rollback_failure_log,tb_shop,tb_shop_type,tb_sign
+      - tb_rollback_failure_log
     shardingAlgorithms:
       databaseSeckillVoucherModModel:
         type: MOD
@@ -87,14 +77,6 @@ rules:
         type: INLINE
         props:
           algorithm-expression: tb_seckill_voucher_${voucher_id.intdiv(2) % 2}
-      databaseUserInfoModModel:
-        type: MOD
-        props:
-          sharding-count: 2
-      tableUserInfoModModel:
-        type: INLINE
-        props:
-          algorithm-expression: tb_user_info_${user_id.intdiv(2) % 2}
       databaseVoucherModModel:
         type: MOD
         props:

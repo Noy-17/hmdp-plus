@@ -1,6 +1,9 @@
 server:
   port: 8085
 spring:
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
   application:
     name: hmdp-plus
   main:

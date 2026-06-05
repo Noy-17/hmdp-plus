@@ -158,44 +158,56 @@ mvn clean compile  # BUILD SUCCESS (27/27 modules)
 
 ---
 
-## 阶段五：Spring Cloud Gateway 网关
+## 阶段五：Nacos + Gateway + OpenFeign ✅
 
-### 5.1 新建 hmdp-gateway 模块
+### 实际实现 (2025.1.1 + 2025.1.0.0)
 
-- 依赖 `spring-cloud-starter-gateway` + `spring-cloud-starter-alibaba-nacos-discovery`
-- 配置路由规则
-- 全局跨域处理
+使用 Spring Cloud 2025.1.1 + Spring Cloud Alibaba 2025.1.0.0，兼容 Spring Boot 4.0.6。
 
-### 5.2 路由设计
+### 5a. Nacos Discovery ✅
 
-```yaml
-spring:
-  cloud:
-    gateway:
-      routes:
-        - id: shop-service
-          uri: lb://hmdp-shop-service
-          predicates:
-            - Path=/api/shop/**
-        - id: user-service
-          uri: lb://hmdp-user-service
-          predicates:
-            - Path=/api/user/**
-        - id: voucher-service
-          uri: lb://hmdp-voucher-service
-          predicates:
-            - Path=/api/voucher/**
-        - id: seckill-service
-          uri: lb://hmdp-seckill-service
-          predicates:
-            - Path=/api/seckill/**
-```
+每个微服务添加 `spring-cloud-starter-alibaba-nacos-discovery` + `@EnableDiscoveryClient`，注册到 `192.168.137.128:8848`。
 
-### 5.3 验证
+### 5b. Spring Cloud Gateway ✅
 
-- 前端 `/api` 请求全部走网关 (端口 8080)
-- 网关根据路径前缀转发到对应微服务
-- Sentinel 控制台能看到网关路由
+新建 `hmdp-gateway` 模块 (端口 8080)，基于 WebFlux/Netty。路由用 Java `RouteLocator` Bean 配置（YAML 路由在 Spring Cloud 2025.1.1 中无法解析）：
+- `/api/shop/**` → `lb://hmdp-shop-service`
+- `/api/user/**` → `lb://hmdp-user-service`
+- `/api/voucher/**` → `lb://hmdp-voucher-service`
+- `/api/blog/**` → `lb://hmdp-blog-service`
+- `/api/follow/**` → `lb://hmdp-follow-service`
+
+`StripPrefix=1` 去掉 `/api` 前缀。`CorsWebFilter` 处理 CORS。认证保持在各服务自己的拦截器，Gateway 只做路由转发。
+
+### 5c. OpenFeign ✅
+
+新建 `hmdp-service-api-feign` 模块：
+- `UserFeignClient` — `GET /user/{id}`, `POST /user/batch`
+- `FollowFeignClient` — `GET /follow/followers/{followUserId}`
+- `UserInfoFeignClient` — `GET /user/info/{userId}`, `POST /user/info/by-levels`
+
+新增后端端点：`POST /user/batch`、`POST /user/info/by-levels`、`GET /follow/followers/{followUserId}`。
+
+`FeignAuthConfig` RequestInterceptor 传播 Authorization header，`MvcConfig` 排除 Feign 内部端点。调用方启动类加 `@EnableFeignClients(basePackages = "org.javaup.feign", defaultConfiguration = FeignAuthConfig.class)`。
+
+4 个 Bridge 类 + 关联 Mapper/Entity 已删除。
+
+### 5d. ShardingSphere 清理 ✅
+
+移除各服务 `shardingsphere.yaml` 中仅为 Bridge 服务的外部表广播规则，每个服务只保留自己实际访问的表。
+
+### 5e. 前端适配 ✅
+
+- `vite.config.js` 代理目标改为 `localhost:8080`，去掉 `rewrite`（Gateway StripPrefix 负责）
+- `InfoHtml.vue` 关注博客 Tab：`indexQueryHotBlogsScroll` → `queryBlogOfFollow`（正确的 `/blog/of/follow` 端点）
+- 删除 `pnpm-lock.yaml`（与 npm 冲突）
+
+### 验证
+
+- 6 个服务 (5 微服务 + Gateway) 注册到 Nacos
+- `curl http://localhost:8080/api/shop-type/list` 通过 Gateway 返回正确数据
+- Blog→User Feign 调用返回用户名
+- 前端 `npm run dev` 通过 Gateway 访问所有页面
 
 ---
 
@@ -328,9 +340,9 @@ curl "http://localhost:8085/api/shop/search?keyword=火锅&lat=39.9&lon=116.4"
 
 ## 快速参考
 
-| 虚拟机 | 192.168.137.128 |
-|---|---|
-| Docker 目录 | `docker/` |
-| Maven | `~/apache-maven/apache-maven-3.9.9/bin/mvn` |
-| JDK | 21 (D:\java\jdk21) |
-| 编译命令 | `mvn clean compile -pl hmdp-core-service -am -DskipTests` |
+| 虚拟机       | 192.168.137.128                                           |
+|-----------|-----------------------------------------------------------|
+| Docker 目录 | `docker/`                                                 |
+| Maven     | `~/apache-maven/apache-maven-3.9.9/bin/mvn`               |
+| JDK       | 21 (D:\java\jdk21)                                        |
+| 编译命令      | `mvn clean compile -pl hmdp-core-service -am -DskipTests` |
