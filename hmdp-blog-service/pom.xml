@@ -92,6 +92,10 @@
             <artifactId>spring-cloud-starter-bootstrap</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.javaup</groupId>
             <artifactId>hmdp-service-api-feign</artifactId>
             <version>${revision}</version>

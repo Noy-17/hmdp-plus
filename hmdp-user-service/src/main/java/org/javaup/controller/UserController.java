@@ -2,6 +2,7 @@ package org.javaup.controller;
 
 
 import cn.hutool.core.bean.BeanUtil;
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import org.javaup.dto.LoginFormDTO;
 import org.javaup.dto.Result;
 import org.javaup.dto.UserDTO;
@@ -55,9 +56,13 @@ public class UserController {
      * @param loginForm 登录参数，包含手机号、验证码；或者手机号、密码
      */
     @PostMapping("/login")
+    @SentinelResource(value = "/user/login", fallback = "loginFallback")
     public Result<String> login(@RequestBody LoginFormDTO loginForm, HttpSession session){
-        // 实现登录功能
         return userService.login(loginForm, session);
+    }
+
+    public Result<String> loginFallback(LoginFormDTO loginForm, HttpSession session, Throwable t) {
+        return Result.fail("系统繁忙，请稍后重试");
     }
 
     /**

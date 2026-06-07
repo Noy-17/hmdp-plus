@@ -1,3 +1,13 @@
+spring:
+  cloud:
+    sentinel:
+      enabled: true
+      eager: true
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD_HOST:192.168.137.128}:8081
+      filter:
+        enabled: true
+
 logging:
   level:
     org.javaup: info

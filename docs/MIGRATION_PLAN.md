@@ -211,7 +211,7 @@ mvn clean compile  # BUILD SUCCESS (27/27 modules)
 
 ---
 
-## 阶段六：Sentinel 流量保护
+## 阶段六：Sentinel 流量保护 ✅
 
 ### 6.1 引入 Sentinel
 
@@ -227,6 +227,17 @@ mvn clean compile  # BUILD SUCCESS (27/27 modules)
 | 商铺查询 | 热点参数限流 | 热门商铺高频查询保护 |
 | 用户登录 | 熔断降级 | 用户服务不可用时返回友好提示 |
 | Gateway | 系统自适应限流 | 入口流量整体管控 |
+
+**实施决策:**
+- Gateway 依赖 `spring-cloud-alibaba-sentinel-gateway`（非 `spring-cloud-starter-alibaba-sentinel`），避免 WebFlux 冲突
+- SCA 已自动装配 `SentinelGatewayFilter` + `SentinelGatewayBlockExceptionHandler`，无需手动建 Bean
+- Gateway 规则用 `GatewayFlowRule`（包 `com.alibaba.csp.sentinel.adapter.gateway.common.rule`，Sentinel 1.8.9 中从 `sc.rule` 迁移）
+- `feign.sentinel.enabled=false`（Nacos 统一配置），避免 FeignClient 启动报错
+- 传输端口显式分配 Gateway=8724, Shop=8719, User=8720, Voucher=8721, Blog=8722, Follow=8723
+- Sentinel Dashboard Docker 端口 `8081:8858`（bladex 镜像默认 8858）
+- `sentinel-datasource-extension` 需显式依赖（SCA Gateway 模块传递依赖缺失）
+- `allow-circular-references: true`：Sentinel AOP 代理暴露了 VoucherServiceImpl ↔ SeckillVoucherServiceImpl 既有循环依赖
+- 规则通过代码 `@PostConstruct` 初始化（Gateway: `GatewaySentinelConfig`, 服务: 各 `SentinelRulesConfig`）
 
 ### 6.3 验证
 

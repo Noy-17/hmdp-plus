@@ -8,6 +8,7 @@ spring:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
   main:
     allow-bean-definition-overriding: true
+    allow-circular-references: true
   mvc:
     servlet:
       load-on-startup: 1
@@ -22,6 +23,18 @@ spring:
     date-format: yyyy-MM-dd HH:mm:ss
     generator:
       WRITE_NUMBERS_AS_STRINGS: true
+  cloud:
+    sentinel:
+      enabled: true
+      eager: true
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD_HOST:192.168.137.128}:8081
+      filter:
+        enabled: true
+
+feign:
+  sentinel:
+    enabled: false
 
 mybatis-plus:
   type-aliases-package: org.javaup.entity
