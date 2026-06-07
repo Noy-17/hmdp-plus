@@ -1,0 +1,15 @@
+logging:
+  level:
+    org.javaup: info
+  pattern:
+    dateformat: mm:ss.SSS
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "prometheus,health,info,gateway"
+  prometheus:
+    metrics:
+      export:
+        enabled: true

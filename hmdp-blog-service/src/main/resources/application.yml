@@ -1,59 +1,10 @@
 server:
   port: ${BLOG_SERVICE_PORT:8084}
+
 spring:
-  autoconfigure:
-    exclude:
-      - org.redisson.spring.starter.RedissonAutoConfigurationV2
-      - com.alibaba.cloud.nacos.endpoint.NacosDiscoveryEndpointAutoConfiguration
-      - org.springframework.cloud.client.discovery.simple.SimpleDiscoveryClientAutoConfiguration
-      - org.springframework.cloud.client.discovery.noop.NoopDiscoveryClientAutoConfiguration
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-  application:
-    name: hmdp-blog-service
   cloud:
     nacos:
       discovery:
-        server-addr: ${NACOS_HOST:localhost}:8848
+        server-addr: ${NACOS_HOST:192.168.137.128}:8848
         namespace: ${NACOS_NAMESPACE:}
         group: DEFAULT_GROUP
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
-  main:
-    allow-bean-definition-overriding: true
-    allow-circular-references: true
-  data:
-    redis:
-      database: 0
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-  mvc:
-    pathmatch:
-      matching-strategy: ant_path_matcher
-    servlet:
-      load-on-startup: 1
-  jackson:
-    default-property-inclusion: non_null
-    time-zone: GMT+8
-    date-format: yyyy-MM-dd HH:mm:ss
-    generator:
-      WRITE_NUMBERS_AS_STRINGS: true
-mybatis-plus:
-  type-aliases-package: org.javaup.entity
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    local-cache-scope: statement
-logging:
-  level:
-    org.javaup: info
-    AUDIT: INFO
-  pattern:
-    dateformat: mm:ss.SSS
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "prometheus,health,info"
-  prometheus:
-    metrics:
-      export:
-        enabled: true

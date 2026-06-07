@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: hmdp-user-service
+  cloud:
+    nacos:
+      config:
+        server-addr: ${NACOS_HOST:192.168.137.128}:8848
+        namespace: ${NACOS_NAMESPACE:}
+        group: DEFAULT_GROUP
+        file-extension: yaml
+  config:
+    import:
+      - nacos:hmdp-common-config.yaml?refresh=true
+      - nacos:${spring.application.name}.yaml?refresh=true

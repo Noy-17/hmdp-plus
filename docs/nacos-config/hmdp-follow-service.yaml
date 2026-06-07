@@ -1,0 +1,2 @@
+# hmdp-follow-service 专属配置 — 暂无额外配置，全部继承自 hmdp-common-config.yaml
+_nacos: {}

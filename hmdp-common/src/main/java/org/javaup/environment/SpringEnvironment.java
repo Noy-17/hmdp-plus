@@ -28,7 +28,6 @@ public class SpringEnvironment implements EnvironmentPostProcessor {
 
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
-        application.setAllowBeanDefinitionOverriding(true);
         Map<String, Object> envProps = loadEnvFile();
         if (!envProps.isEmpty()) {
             environment.getPropertySources()

@@ -1,0 +1,6 @@
+bloom-filter:
+  filters:
+    shop:
+      name: shop-id-bloom
+      expected-insertions: 50000
+      false-probability: 0.01

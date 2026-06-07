@@ -1,0 +1,26 @@
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        retry:
+          enabled: false
+
+bloom-filter:
+  filters:
+    voucher:
+      name: voucher-id-bloom
+      expected-insertions: 100000
+      false-probability: 0.01
+
+seckill:
+  reminder:
+    ahead:
+      seconds: 120

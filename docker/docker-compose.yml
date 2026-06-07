@@ -59,14 +59,19 @@ services:
 
   # ==================== Nacos ====================
   nacos:
-    image: nacos/nacos-server:v2.4.3
+    image: nacos/nacos-server:v3.1.0
     container_name: hmdp-nacos
     ports:
       - "8848:8848"
       - "9848:9848"
+      - "8080:8080"
     environment:
       MODE: standalone
       PREFER_HOST_MODE: ip
+      NACOS_AUTH_ENABLE: "false"
+      NACOS_AUTH_TOKEN: "VGhpc0lzTXlDdXN0b21TZWNyZXRLZXkwMTIzNDU2Nzg="
+      NACOS_AUTH_IDENTITY_KEY: "serverIdentity"
+      NACOS_AUTH_IDENTITY_VALUE: "security"
     volumes:
       - nacos-data:/home/nacos/data
       - nacos-logs:/home/nacos/logs

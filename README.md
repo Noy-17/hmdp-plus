@@ -12,7 +12,7 @@
 | 消息队列 | Kafka | **RabbitMQ 4.x** |
 | 架构 | 单体 | **5 个微服务** + Gateway + 共享 API 模块 |
 | 跨域调用 | 进程内 | **OpenFeign**（Nacos 服务发现 + LoadBalancer） |
-| 服务发现 | 无 | **Nacos 2.4.3** |
+| 服务发现 | 无 | **Nacos 3.1.0** |
 | 网关 | 无 | **Spring Cloud Gateway**（统一入口 :8080） |
 | 事务 | 本地事务 | Seata 分布式事务（计划中） |
 
@@ -38,7 +38,7 @@
 | 限流 | 自研令牌桶 + 滑动窗口 |
 | ID 生成 | Snowflake 雪花算法 |
 | 鉴权 | Sa-Token 1.43.0 |
-| 服务发现 | Nacos 2.4.3 |
+| 服务发现 | Nacos 3.1.0 |
 | 远程调用 | OpenFeign |
 | 网关 | Spring Cloud Gateway (WebFlux, :8080) |
 | 前端 | Vue 3.5 + Vite 6 + Element Plus 2.9 + Pinia 3 |

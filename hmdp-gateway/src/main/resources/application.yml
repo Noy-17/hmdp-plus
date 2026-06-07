@@ -2,28 +2,9 @@ server:
   port: 8080
 
 spring:
-  application:
-    name: hmdp-gateway
   cloud:
     nacos:
       discovery:
         server-addr: ${NACOS_HOST:192.168.137.128}:8848
         namespace: ${NACOS_NAMESPACE:}
         group: DEFAULT_GROUP
-        username: ${NACOS_USERNAME:nacos}
-        password: ${NACOS_PASSWORD:nacos}
-logging:
-  level:
-    org.javaup: info
-  pattern:
-    dateformat: mm:ss.SSS
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "prometheus,health,info,gateway"
-  prometheus:
-    metrics:
-      export:
-        enabled: true
