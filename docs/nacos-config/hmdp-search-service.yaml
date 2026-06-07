@@ -1,0 +1,15 @@
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:192.168.137.128}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+        default-requeue-rejected: false
+        retry:
+          enabled: false
+  elasticsearch:
+    uris: http://${ES_HOST:192.168.137.128}:9200

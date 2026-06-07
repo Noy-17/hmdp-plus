@@ -283,31 +283,67 @@ mvn clean compile  # BUILD SUCCESS (27/27 modules)
 
 ---
 
-## 阶段八：Elasticsearch 搜索引擎
+## 阶段八：Elasticsearch 搜索引擎 ✅
 
-### 8.1 替换范围
+### 8.1 实施决策
 
-| 现有实现 | 替换为 | 说明 |
-|---|---|---|
-| Redis GEO (`GEOSEARCH`) | Elasticsearch `geo_distance` | 商铺地理位置搜索 |
-| MySQL `LIKE` 模糊查询 | Elasticsearch 全文检索 | 商铺名称/描述搜索 |
-| 按距离排序 | ES `_geo_distance` sort | 附近商铺排序 |
+- **客户端选择**: `co.elastic.clients:elasticsearch-java:8.17.4` 直接使用（不用 `spring-boot-starter-data-elasticsearch`，SB4 BOM 管理 9.x 不兼容 ES 8.16.3）
+- **API 路径不变**: `/api/shop/of/name` 和 `/api/shop/of/type` 路径保持与 shop-service 原接口一致，Gateway 精确匹配路由转发到 search-service
+- **MQ 异步同步**: shop-service CRUD → RabbitMQ `shop_sync_topic` → search-service 消费 → ES 索引更新
+- **geo_point 显式映射**: ES 8.x dynamic mapping 不自动识别 lat/lon 为 geo_point，必须在索引创建时显式声明
 
-### 8.2 实现方案
+### 8.2 新增模块 `hmdp-search-service`
 
-- `spring-boot-starter-data-elasticsearch`
-- 商铺数据双写：MySQL 写入 → MQ → ES 同步
-- 首次全量同步：从 DB 批量导入 ES
-- ShopController 搜索接口改为查询 ES
+端口 8086，12 个 Java 文件，依赖 `elasticsearch-java` 8.17.4 + `hmdp-sharding`（只读 DB）。
 
-### 8.3 验证
+| 组件 | 文件 |
+|------|------|
+| 文档模型 | `document/ShopDoc.java` — `@Field` 注解 + `GeoPoint` 位置 |
+| ES 配置 | `config/ElasticsearchConfig.java` — RestClient + JacksonJsonpMapper + JavaTimeModule |
+| 业务服务 | `service/impl/ShopSearchServiceImpl.java` — match 搜索 / term+geo_distance / 全量同步 |
+| REST 控制器 | `controller/ShopSearchController.java` — `GET /shop/of/name`, `GET /shop/of/type` |
+| DB 访问 | `entity/Shop.java` + `mapper/ShopMapper.java`（MyBatis-Plus，只读） |
+| MQ 消费 | `rabbitmq/consumer/ShopSyncConsumer.java` — 继承 `AbstractConsumerHandler`，手动 ACK |
+| MQ 配置 | `config/RabbitMQConfig.java` — Exchange/Queue/Binding 声明（幂等） |
+| 全量同步 | `init/EsFullSyncInit.java` — `@PostConstruct` 检查 ES 为空则从 DB 批量导入 |
+
+### 8.3 shop-service 侧变更
+
+- `config/RabbitMQConfig.java` — 新增 Exchange/Queue/Binding for `shop_sync_topic`
+- `rabbitmq/message/ShopSyncMessage.java` — `{shopId, operation}` DTO
+- `rabbitmq/producer/ShopSyncProducer.java` — 继承 `AbstractProducerHandler`
+- `controller/ShopController.java` — `saveShop()`/`updateShop()` 返回前发布 MQ 消息
+- `hmdp-common/.../Constant.java` — 新增 `SHOP_SYNC_TOPIC`
+
+### 8.4 Gateway 路由
+
+搜索路由（精确匹配）定义在 shop-service 路由（通配）**之前**，先匹配先胜：
+
+```
+/api/shop/of/name, /api/shop/of/type  →  lb://hmdp-search-service
+/api/shop-type/**, /api/shop/**        →  lb://hmdp-shop-service
+```
+
+`GET /api/shop/{id}`、`POST/PUT /api/shop` 仍走 shop-service，前端零改动。
+
+### 8.5 已踩坑
+
+- **`FieldValue` tagged union**: sort 值可能是 `Long`（score 排序）或 `Double`（distance 排序），必须 `isDouble()`/`isLong()` 检查后再取
+- **geo_point 映射**: 不显式创建则 dynamic mapping 按 `object` 处理，geo_distance 查询报 `search_phase_execution_exception`
+- **JAR 启动**: ShardingSphere `ResourceUtils.getFile()` 无法读取 Spring Boot 嵌套 JAR 中的 YAML，必须用 `mvn spring-boot:run`
+- **MQ 无限重试**: `default-requeue-rejected: true`（默认）+ `retry.enabled: false` → 消费失败后无限 requeue。Nacos 配置设 `default-requeue-rejected: false`
+
+### 8.6 验证
 
 ```bash
-# ES 健康检查
-curl http://192.168.137.128:9200/_cat/health
-
-# 搜索接口
-curl "http://localhost:8085/api/shop/search?keyword=火锅&lat=39.9&lon=116.4"
+# 名称搜索
+curl "http://localhost:8080/api/shop/of/name?name=茶"
+# 类型搜索（无坐标，按 score 排序）
+curl "http://localhost:8080/api/shop/of/type?typeId=1"
+# GEO 搜索（按距离排序）
+curl "http://localhost:8080/api/shop/of/type?typeId=1&x=120.149&y=30.334"
+# 向后兼容：商铺详情仍走 shop-service
+curl "http://localhost:8080/api/shop/1"
 ```
 
 ---

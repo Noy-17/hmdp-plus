@@ -11,6 +11,10 @@ public class GatewayRouteConfig {
     @Bean
     public RouteLocator shopRoute(RouteLocatorBuilder builder) {
         return builder.routes()
+                .route("shop-search", r -> r
+                        .path("/api/shop/of/name", "/api/shop/of/type")
+                        .filters(f -> f.stripPrefix(1))
+                        .uri("lb://hmdp-search-service"))
                 .route("shop-service", r -> r
                         .path("/api/shop-type/**", "/api/shop/**")
                         .filters(f -> f.stripPrefix(1))

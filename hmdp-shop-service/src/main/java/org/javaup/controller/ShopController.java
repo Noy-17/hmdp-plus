@@ -6,8 +6,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.annotation.Resource;
 import org.javaup.dto.Result;
 import org.javaup.entity.Shop;
+import org.javaup.rabbitmq.message.ShopSyncMessage;
+import org.javaup.rabbitmq.producer.ShopSyncProducer;
 import org.javaup.service.IShopService;
 import org.javaup.utils.SystemConstants;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +26,12 @@ public class ShopController {
 
     @Resource
     public IShopService shopService;
+
+    @Resource
+    private ShopSyncProducer shopSyncProducer;
+
+    @Value("${prefix.distinction.name:hmdp}")
+    private String prefix;
 
     /**
      * 根据id查询商铺信息
@@ -41,7 +50,11 @@ public class ShopController {
      */
     @PostMapping
     public Result saveShop(@RequestBody Shop shop) {
-        return shopService.saveShop(shop);
+        Result result = shopService.saveShop(shop);
+        if (result.getSuccess() && result.getData() instanceof Long shopId) {
+            shopSyncProducer.sendPayload(prefix + "-shop_sync_topic", new ShopSyncMessage(shopId, "CREATE"));
+        }
+        return result;
     }
 
     /**
@@ -51,8 +64,12 @@ public class ShopController {
      */
     @PutMapping
     public Result updateShop(@RequestBody Shop shop) {
-        // 写入数据库
-        return shopService.update(shop);
+        Result result = shopService.update(shop);
+        Long id = shop.getId();
+        if (id != null) {
+            shopSyncProducer.sendPayload(prefix + "-shop_sync_topic", new ShopSyncMessage(id, "UPDATE"));
+        }
+        return result;
     }
 
     /**

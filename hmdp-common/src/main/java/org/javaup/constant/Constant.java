@@ -11,7 +11,9 @@ public class Constant {
     public static final String SECKILL_VOUCHER_TOPIC = "seckill_voucher_topic";
     
     public static final String SECKILL_VOUCHER_CACHE_INVALIDATION_TOPIC = "seckill_voucher_cache_invalidation_topic";
-    
+
+    public static final String SHOP_SYNC_TOPIC = "shop_sync_topic";
+
     public static final String BLOOM_FILTER_HANDLER_SHOP = "shop";
     
     public static final String BLOOM_FILTER_HANDLER_VOUCHER = "voucher";

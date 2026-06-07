@@ -9,9 +9,9 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>hmdp-shop-service</artifactId>
-    <name>hmdp-shop-service</name>
-    <description>商铺微服务</description>
+    <artifactId>hmdp-search-service</artifactId>
+    <name>hmdp-search-service</name>
+    <description>Elasticsearch 搜索微服务</description>
 
     <dependencies>
         <dependency>
@@ -31,27 +31,7 @@
         </dependency>
         <dependency>
             <groupId>org.javaup</groupId>
-            <artifactId>hmdp-redis-framework</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.javaup</groupId>
-            <artifactId>hmdp-bloom-filter-framework</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.javaup</groupId>
-            <artifactId>hmdp-service-lock-framework</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.javaup</groupId>
-            <artifactId>hmdp-id-generator-framework</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.javaup</groupId>
-            <artifactId>hmdp-parameter</artifactId>
+            <artifactId>hmdp-mq-consumer-framework</artifactId>
             <version>${revision}</version>
         </dependency>
         <dependency>
@@ -71,6 +51,25 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-jackson2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+        <!-- Elasticsearch 8.x（不用 spring-boot-starter-data-elasticsearch，SB4 强依赖 elasticsearch-java 9.x 不兼容 ES 8.16.3） -->
+        <dependency>
+            <groupId>co.elastic.clients</groupId>
+            <artifactId>elasticsearch-java</artifactId>
+            <version>8.17.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <!-- Redis（hmdp-common 的 MvcConfig 需要 StringRedisTemplate） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
         <dependency>
             <groupId>com.mysql</groupId>
@@ -110,15 +109,6 @@
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.javaup</groupId>
-            <artifactId>hmdp-mq-producer-framework</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
-        </dependency>
     </dependencies>
 
     <build>
@@ -128,7 +118,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>org.javaup.ShopServiceApplication</mainClass>
+                    <mainClass>org.javaup.SearchServiceApplication</mainClass>
                 </configuration>
                 <executions>
                     <execution>
