@@ -46,7 +46,7 @@ rules:
           standard:
             shardingColumn: phone
             shardingAlgorithmName: tableUserPhoneHashModModel
-    broadcastTables: []
+    broadcastTables: [undo_log]
     shardingAlgorithms:
       databaseUserModModel:
         type: MOD

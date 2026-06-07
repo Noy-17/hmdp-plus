@@ -68,6 +68,7 @@ rules:
             shardingAlgorithmName: tableVoucherReconcileLogModModel
     broadcastTables:
       - tb_rollback_failure_log
+      - undo_log
     shardingAlgorithms:
       databaseSeckillVoucherModModel:
         type: MOD

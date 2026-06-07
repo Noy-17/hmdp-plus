@@ -14,7 +14,7 @@
 | 跨域调用 | 进程内 | **OpenFeign**（Nacos 服务发现 + LoadBalancer） |
 | 服务发现 | 无 | **Nacos 3.1.0** |
 | 网关 | 无 | **Spring Cloud Gateway**（统一入口 :8080） |
-| 事务 | 本地事务 | Seata 分布式事务（计划中） |
+| 事务 | 本地事务 | Seata 分布式事务（AT 模式，2.5.0） |
 
 ### 5 个微服务
 

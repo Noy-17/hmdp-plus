@@ -247,35 +247,39 @@ mvn clean compile  # BUILD SUCCESS (27/27 modules)
 
 ---
 
-## 阶段七：Seata 分布式事务
+## 阶段七：Seata 分布式事务 ✅
 
-### 7.1 引入 Seata
+### 7.1 引入 Seata ✅
 
-- `spring-cloud-starter-alibaba-seata`
-- 配置 `seataServer.properties` 推送到 Nacos `SEATA_GROUP`
+- `spring-cloud-starter-alibaba-seata`（SCA 2025.1.0.0 内置 Seata 2.5.0 客户端）
+- Docker Seata Server: `seataio/seata-server:1.8.0` → `apache/seata-server:2.5.0`
+- `seataServer.properties` 推送到 Nacos `SEATA_GROUP`
 
 ### 7.2 适用范围
 
 **使用 AT 模式的场景:**
-- 退款流程（订单服务 ⇄ 优惠券服务）
+- 退款流程（`VoucherOrderServiceImpl.cancel()` 已加 `@GlobalTransactional`）
 - 优惠券发放（用户服务 → 优惠券服务）
 - 非秒杀的正常下单
 
 **不使用 Seata 的场景:**
 - 秒杀链路 — 保持 MQ + Outbox + 对账机制（高吞吐要求，AT 模式回滚日志会严重影响性能）
 
-### 7.3 实现要点
+### 7.3 实现要点 ✅
 
-- 在需要分布式事务的方法上添加 `@GlobalTransactional`
-- Seata TC Server 已在 Docker 中运行，Nacos 作为注册中心
-- 每个微服务作为 Seata Client (TM + RM)
-- undo_log 表需在 hmdp_0/hmdp_1 中创建
+- `@GlobalTransactional` 在 `VoucherOrderServiceImpl.cancel()` 上
+- Seata TC Server 2.5.0 在 Docker 中运行，`seata.server.host: 192.168.137.128`
+- 客户端 `registry.type: file` + `service.default.grouplist` 直连 TC（绕过 Docker NAT 问题）
+- `SeataDataSourceConfig` 手动创建 `DataSourceProxy` 包装 `ShardingSphereDataSource`（CGLIB 无法代理 final class）
+- `undo_log` 作为 ShardingSphere 广播表（shardingsphere.yaml `broadcastTables` 追加）
+- 客户端配置通过 Nacos `hmdp-common-config.yaml` 统一下发
+- `enable-auto-data-source-proxy: false`（禁用 CGLIB 自动代理）
 
-### 7.4 验证
+### 7.4 验证 ✅
 
 - Seata Console (http://192.168.137.128:7091) 可查看全局事务状态
-- 模拟退款流程异常，库存回滚成功
-- 秒杀链路不受影响
+- voucher-service 启动日志: "register TM success" + "register RM success"（client 2.5.0 ↔ server 2.5.0）
+- `cancel()` 方法带 `@GlobalTransactional`，undo_log 通过广播表路由到所有物理库
 
 ---
 

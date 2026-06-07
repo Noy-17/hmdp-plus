@@ -17,6 +17,7 @@ rules:
     tables: {}
     broadcastTables:
       - tb_shop,tb_shop_type
+      - undo_log
     shardingAlgorithms: {}
 props:
   sql-show: true

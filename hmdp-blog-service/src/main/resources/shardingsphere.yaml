@@ -17,5 +17,6 @@ rules:
   - !SHARDING
     broadcastTables:
       - tb_blog,tb_blog_comments
+      - undo_log
 props:
   sql-show: true

@@ -14,6 +14,7 @@ services:
       - ./sql/1_create_database.sql:/docker-entrypoint-initdb.d/01_create_database.sql
       - ./sql/hmdp_0.sql:/docker-entrypoint-initdb.d/02_hmdp_0.sql
       - ./sql/hmdp_1.sql:/docker-entrypoint-initdb.d/03_hmdp_1.sql
+      - ./sql/seata_undo_log.sql:/docker-entrypoint-initdb.d/04_seata_undo_log.sql
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
@@ -113,19 +114,15 @@ services:
       retries: 10
     restart: unless-stopped
 
-  # ==================== Seata Server 1.8.0 ====================
+  # ==================== Seata Server 2.5.0 ====================
   seata:
-    image: seataio/seata-server:1.8.0
+    image: apache/seata-server:2.5.0
     container_name: hmdp-seata
     ports:
       - "8091:8091"
       - "7091:7091"
-    environment:
-      SEATA_IP: ${SEATA_IP:-192.168.137.128}
-      SEATA_PORT: 8091
-      STORE_MODE: file
     volumes:
-      - ./seata-conf/registry.conf:/seata-server/resources/registry.conf
+      - ./seata-conf/application.yml:/seata-server/resources/application.yml
     depends_on:
       nacos:
         condition: service_healthy

@@ -31,6 +31,7 @@ FILES=(
     "hmdp-blog-service.yaml|${SCRIPT_DIR}/hmdp-blog-service.yaml"
     "hmdp-follow-service.yaml|${SCRIPT_DIR}/hmdp-follow-service.yaml"
     "hmdp-gateway.yaml|${SCRIPT_DIR}/hmdp-gateway.yaml"
+    "seataServer.properties|${SCRIPT_DIR}/seataServer.properties"
 )
 
 fail=0

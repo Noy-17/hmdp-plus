@@ -115,6 +115,7 @@ rules:
             shardingAlgorithmName: tableVoucherReconcileLogModModel
     broadcastTables:
       - tb_blog,tb_blog_comments,tb_follow,tb_rollback_failure_log,tb_shop,tb_shop_type,tb_sign
+      - undo_log
     shardingAlgorithms:
       databaseSeckillVoucherModModel:
         type: MOD

@@ -1,6 +1,10 @@
 server:
   port: ${VOUCHER_SERVICE_PORT:8083}
 
+seata:
+  registry:
+    type: file
+
 spring:
   cloud:
     nacos:

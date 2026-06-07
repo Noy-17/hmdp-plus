@@ -1,20 +1,24 @@
 server:
-  port: 7091
+  port: 8091
 
 spring:
   application:
     name: seata-server
+  main:
+    web-application-type: none
 
 logging:
-  console:
-    user:
-  log:
-    exceptionRate: 100
-
-console:
-  user:
-    username: seata
-    password: seata
+  config: classpath:logback-spring.xml
+  file:
+    path: ${log.home:${user.home}/logs/seata}
+  extend:
+    logstash-appender:
+      enabled: false
+      destination: 127.0.0.1:4560
+    kafka-appender:
+      enabled: false
+      bootstrap-servers: 127.0.0.1:9092
+      topic: logback_to_logstash
 
 seata:
   config:
@@ -33,10 +37,21 @@ seata:
       server-addr: nacos:8848
       group: SEATA_GROUP
       namespace:
+      cluster: default
       username:
       password:
   server:
+    host: 192.168.137.128
     service-port: 8091
+  store:
+    mode: file
+    file:
+      dir: sessionStore
+      max-branch-session-size: 16384
+      max-global-session-size: 512
+      file-write-buffer-cache-size: 16384
+      session-reload-read-size: 100
+      flush-disk-mode: async
   security:
     secretKey: SeataSecretKey0c382ef121d778043159209298fd40bf3850a017
     tokenValidityInMilliseconds: 1800000

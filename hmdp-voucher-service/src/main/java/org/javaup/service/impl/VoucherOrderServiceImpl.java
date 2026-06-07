@@ -38,6 +38,7 @@ import org.javaup.mapper.VoucherOrderMapper;
 import org.javaup.mapper.VoucherOrderRouterMapper;
 import org.javaup.message.MessageExtend;
 import org.javaup.model.SeckillVoucherFullModel;
+import io.seata.spring.annotation.GlobalTransactional;
 import org.javaup.redis.RedisCacheImpl;
 import org.javaup.redis.RedisKeyBuild;
 import org.javaup.repeatexecutelimit.annotion.RepeatExecuteLimit;
@@ -555,6 +556,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     }
     
     @Override
+    @GlobalTransactional(timeoutMills = 60000)
     @Transactional(rollbackFor = Exception.class)
     public Boolean cancel(CancelVoucherOrderDto cancelVoucherOrderDto) {
         VoucherOrder voucherOrder = lambdaQuery()
