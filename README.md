@@ -318,87 +318,142 @@ userBehaviorProducer.send(new UserBehaviorEvent(userId, "VIEW_SHOP", shopId, "sh
 
 ## 四、快速部署
 
-### 4.1 环境要求
+> 从零到跑通，6 步约 10 分钟。默认中间件运行在 `192.168.137.128`（Docker VM），后端在 `localhost`。
 
-| 依赖 | 版本 | 用途 |
-|------|------|------|
-| JDK | 21+ | 编译与运行 |
-| Maven | 3.9+ | 构建（Windows 需手动下载配 PATH） |
-| Node.js | 18+ | 前端构建 |
-| Docker + Compose | 最新版 | 一键启动全部中间件 |
+### 第一步：环境检查
 
-### 4.2 启动中间件
+```bash
+java --version      # 需要 21+
+mvn --version       # 需要 3.9+
+node --version      # 需要 18+
+docker --version    # 需要 Docker + Compose
+```
+
+### 第二步：启动中间件
 
 ```bash
 cd docker
-docker compose up -d    # 启动全部 7 个容器
+docker compose up -d        # MySQL + Redis + RabbitMQ + Nacos + Sentinel + ES + Seata
 
-# 验证
-docker compose ps        # 全部 STATUS 应为 Up 或 healthy
-curl http://192.168.137.128:8848/nacos   # Nacos 控制台
-curl http://192.168.137.128:15672         # RabbitMQ 管理界面（guest/guest）
-curl http://192.168.137.128:9200          # ES 健康检查
-curl http://192.168.137.128:8081          # Sentinel Dashboard（sentinel/sentinel）
+# 等 30 秒让容器就绪，然后验证
+docker compose ps            # 全部 STATUS 应为 Up 或 healthy
+curl -s http://192.168.137.128:8848/nacos   | head -1  # Nacos OK
+curl -s http://192.168.137.128:9200          | head -1  # ES OK
 ```
 
-MySQL 数据库 `hmdp_0` 和 `hmdp_1` 由 `docker/sql/` 脚本自动初始化。
+> MySQL 数据库 `hmdp_0` / `hmdp_1` 和 AI 库 `hmdp_ai` 由 `docker/sql/` 自动建表。ES 索引由服务首次启动时自动创建。
 
-### 4.3 配置连接
-
-**方式一（推荐）**：复制环境变量模板
+### 第三步：配置环境变量
 
 ```bash
 cp .env.example .env
-# 编辑 .env 中的 MYSQL_HOST / REDIS_HOST / RABBITMQ_HOST / NACOS_HOST 等
+# 默认值已指向 192.168.137.128，如果你的 VM IP 不同，编辑 .env 覆盖
 ```
 
-**方式二**：Maven 编译参数（各服务 `shardingsphere.yaml` 通过资源过滤替换）
+### 第四步：上传 Nacos 配置 & 编译
 
 ```bash
-mvn clean compile -Dmysql.host=192.168.137.128 -Dmysql.port=3306 -Dmysql.user=root -Dmysql.password=root
+cd docs/nacos-config && bash upload.sh && cd ../..
+mvn clean compile -q    # -Dmysql.host=... 可按需覆盖
 ```
 
-### 4.4 上传 Nacos 配置
-
-项目所有业务配置托管在 Nacos，配置参考文件在 `docs/nacos-config/`：
+### 第五步：启动后端
 
 ```bash
-cd docs/nacos-config
-bash upload.sh   # 一键上传到 Nacos（Nacos 需已启动）
+# 推荐：开发模式（支持热更新，ShardingSphere 兼容）
+mvn spring-boot:run -pl hmdp-gateway &
+mvn spring-boot:run -pl hmdp-shop-service &
+mvn spring-boot:run -pl hmdp-search-service &
+mvn spring-boot:run -pl hmdp-user-service &
+mvn spring-boot:run -pl hmdp-voucher-service &
+mvn spring-boot:run -pl hmdp-blog-service &
+mvn spring-boot:run -pl hmdp-follow-service &
+mvn spring-boot:run -pl hmdp-ai-agent-service &
+
+# 或：打包运行
+# mvn clean package -DskipTests
+# java -jar hmdp-gateway/target/hmdp-gateway-0.0.1-SNAPSHOT.jar
+# ...（7 个服务各开一个终端）
 ```
 
-### 4.5 构建并启动后端
+**验证**：打开 Nacos 控制台 `http://192.168.137.128:8848/nacos` → 服务列表应出现 7 个服务 + 1 个 Gateway。
 
-```bash
-mvn clean package -DskipTests
-
-# Gateway + 7 个微服务（各开一个终端）：
-java -jar hmdp-gateway/target/hmdp-gateway-0.0.1-SNAPSHOT.jar         # :8080
-java -jar hmdp-shop-service/target/hmdp-shop-service-0.0.1-SNAPSHOT.jar    # :8081
-java -jar hmdp-search-service/target/hmdp-search-service-0.0.1-SNAPSHOT.jar # :8086
-java -jar hmdp-user-service/target/hmdp-user-service-0.0.1-SNAPSHOT.jar    # :8082
-java -jar hmdp-voucher-service/target/hmdp-voucher-service-0.0.1-SNAPSHOT.jar # :8083
-java -jar hmdp-blog-service/target/hmdp-blog-service-0.0.1-SNAPSHOT.jar    # :8084
-java -jar hmdp-follow-service/target/hmdp-follow-service-0.0.1-SNAPSHOT.jar # :8085
-java -jar hmdp-ai-agent-service/target/hmdp-ai-agent-service-0.0.1-SNAPSHOT.jar # :8087
-```
-
-也可用 `mvn spring-boot:run -pl <模块名>` 开发模式。注意 ShardingSphere 用 `ResourceUtils.getFile()` 读取 YAML，嵌套 JAR 无法正确解析路径，必须用 `spring-boot:run` 或 `java -jar`。
-
-启动成功标志：Nacos 控制台「服务列表」可见 7 个服务；访问 `http://localhost:8080/api/shop-type/list` 返回数据。
-
-### 4.6 启动前端
+### 第六步：启动前端
 
 ```bash
 cd hmdp-vue3
-npm install && npm run dev   # → http://localhost:5173
+npm install && npm run dev    # → http://localhost:5173
 ```
 
-Vite 将 `/api` 代理到 `localhost:8080`（Gateway），前端零配置连通后端。
+### 常见问题
+
+| 问题 | 原因 | 解决 |
+|------|------|------|
+| Gateway 启动报 WebFlux 冲突 | 引了 Servlet 版 Sentinel | 确认 `hmdp-gateway` POM 用的是 `spring-cloud-alibaba-sentinel-gateway` |
+| `java -jar` 启动报 ShardingSphere YAML 找不到 | 嵌套 JAR 路径问题 | 换 `mvn spring-boot:run`，或先 `jar xf` 解压再运行 |
+| ES 查询报 `geo_point` 错误 | dynamic mapping 未识别为 geo_point | 删索引重启 search-service，`EsFullSyncInit` 会重建并显式映射 |
+| Nacos 服务列表为空 | 服务未注册成功 | 检查各服务启动日志中 `nacos registry` 字样，确认 `bootstrap.yml` 中 `nacos.discovery.server-addr` 正确 |
+| 前端页面空白 / 列表无数据 | JSONbig 精度问题 | 确保 `src/utils/request.js` 的 `transformResponse` 使用了 `JSONbig({ storeAsString: true })`，并在数据使用处做 `Number()` 转换 |
 
 ## 五、架构总览
 
-### 5.1 模块结构
+### 5.1 架构全景图
+
+```
+                    ┌───────────────────────────────────────────────┐
+                    │           Docker 192.168.137.128              │
+                    │                                               │
+  ┌──────────┐      │  ┌─────────┐ ┌───────┐ ┌──────────┐         │
+  │ 浏览器    │      │  │ MySQL   │ │ Redis │ │RabbitMQ  │         │
+  │ Vue3 SPA │      │  │ :3306   │ │:6379  │ │:5672/15672│        │
+  │ :5173    │      │  │ 双库分片 │ │       │ │ 4.x      │         │
+  └────┬─────┘      │  └────▲────┘ └──▲────┘ └────▲─────┘         │
+       │            │       │         │           │                │
+       │ /api →     │  ┌────┴─────────┴───────────┴─────┐          │
+       │            │  │        Nacos :8848              │          │
+  ┌────▼────────────┼──┤   服务发现 + 配置中心 3.1.0     │          │
+  │    Gateway      │  └────────────────┬───────────────┘          │
+  │    :8080        │                   │                           │
+  │  Sentinel       │  ┌────────────────┼───────────────────┐      │
+  │  网关限流       │  │       Sentinel :8081→8858         │      │
+  └────┬────────────┼──┤       流量监控 Dashboard          │      │
+       │            │  └────────────────┼───────────────────┘      │
+       │ 负载均衡    │                   │                           │
+       │ 路由分发    │  ┌────────────────┼───────────────────┐      │
+       │            │  │       Seata    :8091                │      │
+  ┌────┼────────────┼──┤     分布式事务 TC                   │      │
+  │    │            │  └────────────────┼───────────────────┘      │
+  │    │            │                                               │
+  │    │    ┌───────┴───────────────────────────────┐              │
+  │    │    │        ES :9200 (搜索引擎 8.16.3)     │              │
+  │    │    └───────────────────────────────────────┘              │
+  │    │            └──────────────────────────────────────────────┘
+  │    │
+  │    ├── /api/shop/** ──────► shop-service    :8081 ── 商铺CRUD
+  │    ├── /api/shop/of/** ───► search-service  :8086 ── ES全文检索
+  │    ├── /api/user/** ──────► user-service    :8082 ── 用户/登录
+  │    ├── /api/voucher/** ───► voucher-service :8083 ── 秒杀全链路
+  │    ├── /api/blog/** ──────► blog-service    :8084 ── 探店/Feed
+  │    ├── /api/follow/** ────► follow-service  :8085 ── 关注/取关
+  │    └── /api/ai/** ────────► ai-agent-service:8087 ── LLM智能大脑
+  │                                    │
+  │                          ┌─────────┼─────────┐
+  │                          │ Feign    │ Feign   │ OkHttp
+  │                          ▼          ▼         ▼
+  │                     search-service  voucher   DeepSeek API
+  │                     shop-service    follow    (外部 LLM)
+  │                     user-service
+  │
+  │   ◄─── OpenFeign 跨服务调用 ─── MQ 异步解耦 ─── Sentinel 流量防护
+  │
+  │   Redis ── 缓存/分布式锁/布隆/令牌桶/用户画像
+  │   MySQL ── ShardingSphere 双库分片 + Seata AT 分布式事务
+  └────────────────────────────────────────────────────────────────
+```
+
+**数据流向**：前端所有请求统一走 Gateway → Nacos 发现服务实例 → Sentinel 做流量保护 → 路由到对应微服务。服务间需要跨库查询时通过 OpenFeign 调用（带 Auth header 传播），异步事件通过 RabbitMQ 发布/消费。AI Agent 作为独立服务，通过 Feign 获取业务数据后调用 DeepSeek 推理。
+
+### 5.2 模块结构
 
 ```
 hmdp-plus (父 POM)
@@ -428,7 +483,7 @@ hmdp-plus (父 POM)
 
 所有框架模块通过 `META-INF/spring/*.imports` / `spring.factories` 自动装配，各服务无需 `@ComponentScan`。
 
-### 5.2 跨服务调用（OpenFeign）
+### 5.3 跨服务调用（OpenFeign）
 
 ```java
 @FeignClient(name = "hmdp-user-service", path = "/user")
@@ -448,7 +503,7 @@ public interface UserFeignClient {
 
 `FeignAuthConfig` RequestInterceptor 自动传播 Authorization header。
 
-### 5.3 框架模块一览
+### 5.4 框架模块一览
 
 | 模块 | 核心能力 | 关键类 |
 |------|---------|--------|
@@ -458,7 +513,7 @@ public interface UserFeignClient {
 | `hmdp-mq-consumer-framework` | 消费模板方法、幂等集成 | `AbstractConsumerHandler` |
 | `hmdp-id-generator-framework` | Snowflake ID 生成 | `SnowflakeIdGenerator` |
 
-### 5.4 三个核心范式
+### 5.5 三个核心范式
 
 **分布式锁 — `@ServiceLock` 注解**：声明式接入，支持读锁/写锁/公平锁/非公平锁，失败可自定义降级。
 
