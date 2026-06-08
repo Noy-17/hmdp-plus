@@ -46,3 +46,4 @@ build/
 .vscode/
 
 CLAUDE.md
+docs/MIGRATION_PLAN.md
