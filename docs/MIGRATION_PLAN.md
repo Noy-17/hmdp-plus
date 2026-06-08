@@ -32,10 +32,10 @@
 | MySQL 8.0 | `mysql:8.0` | 3306 |
 | Redis 7 | `redis:7-alpine` | 6379 |
 | RabbitMQ 4.x | `rabbitmq:4-management-alpine` | 5672 / 15672 |
-| Nacos 2.4.3 | `nacos/nacos-server:v2.4.3` | 8848 / 9848 |
-| Sentinel Dashboard 1.8.8 | `bladex/sentinel-dashboard:1.8.8` | 8081→8080 |
+| Nacos 3.1.0 | `nacos/nacos-server:v3.1.0` | 8848 / 9848 |
+| Sentinel Dashboard 1.8.9 | `bladex/sentinel-dashboard:1.8.9` | 8081→8080 |
 | Elasticsearch 8.16 | `docker.elastic.co/elasticsearch/elasticsearch:8.16.3` | 9200 / 9300 |
-| Seata 1.8.0 | `seataio/seata-server:1.8.0` | 8091 / 7091 |
+| Seata 2.5.0 | `apache/seata-server:2.5.0` | 8091 / 7091 |
 
 **验证:**
 ```bash
@@ -396,4 +396,4 @@ curl "http://localhost:8080/api/shop/1"
 | Docker 目录 | `docker/`                                                 |
 | Maven     | `~/apache-maven/apache-maven-3.9.9/bin/mvn`               |
 | JDK       | 21 (D:\java\jdk21)                                        |
-| 编译命令      | `mvn clean compile -pl hmdp-core-service -am -DskipTests` |
+| 编译命令      | `mvn clean compile -DskipTests` |

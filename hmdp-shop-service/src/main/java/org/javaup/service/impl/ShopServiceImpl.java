@@ -77,8 +77,12 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         // 写入数据库
         shop.setId(snowflakeIdGenerator.nextId());
         save(shop);
-        // 写入布隆过滤器（商铺业务）
-        bloomFilterHandlerFactory.get(BLOOM_FILTER_HANDLER_SHOP).add(String.valueOf(shop.getId()));
+        // 写入布隆过滤器（商铺业务），失败不影响主流程
+        try {
+            bloomFilterHandlerFactory.get(BLOOM_FILTER_HANDLER_SHOP).add(String.valueOf(shop.getId()));
+        } catch (Exception e) {
+            log.warn("布隆过滤器写入失败 shop id={}", shop.getId(), e);
+        }
         // 返回店铺id
         return Result.ok(shop.getId());
     }
@@ -127,18 +131,18 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         log.info("查询商铺 从Redis缓存没有查询到 商铺id : {}",id);
         if (!bloomFilterHandlerFactory.get(BLOOM_FILTER_HANDLER_SHOP).contains(String.valueOf(id))) {
             log.info("查询商铺 布隆过滤器判断不存在 商铺id : {}",id);
-            throw new RuntimeException("查询商铺不存在");
+            return null;
         }
         Boolean existResult = redisCache.hasKey(RedisKeyBuild.createRedisKey(RedisKeyManage.CACHE_SHOP_KEY_NULL, id));
         if (existResult){
-            throw new RuntimeException("查询商铺不存在");
+            return null;
         }
         RLock lock = serviceLockTool.getLock(LockType.Reentrant, LOCK_SHOP_KEY, new String[]{String.valueOf(id)});
         lock.lock();
         try {
             existResult = redisCache.hasKey(RedisKeyBuild.createRedisKey(RedisKeyManage.CACHE_SHOP_KEY_NULL, id));
             if (existResult){
-                throw new RuntimeException("查询商铺不存在");
+                return null;
             }
             shop = redisCache.get(RedisKeyBuild.createRedisKey(RedisKeyManage.CACHE_SHOP_KEY, id), Shop.class);
             if (Objects.nonNull(shop)) {
@@ -150,7 +154,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
                         "这是一个空值",
                         CACHE_SHOP_TTL,
                         TimeUnit.MINUTES);
-                throw new RuntimeException("查询商铺不存在");
+                return null;
             }
             redisCache.set(RedisKeyBuild.createRedisKey(RedisKeyManage.CACHE_SHOP_KEY, id),shop,
                     CACHE_SHOP_TTL,

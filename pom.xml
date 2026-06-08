@@ -33,7 +33,7 @@
         <module>hmdp-service-api</module>
         <module>hmdp-common</module>
         <module>hmdp-sharding</module>
-        <module>hmdp-core-service</module>
+
         <module>hmdp-shop-service</module>
         <module>hmdp-user-service</module>
         <module>hmdp-voucher-service</module>
