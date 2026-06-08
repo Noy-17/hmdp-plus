@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
-@FeignClient(name = "hmdp-user-service", path = "/user")
+@FeignClient(name = "hmdp-user-service", contextId = "hmdp-user-service", path = "/user")
 public interface UserFeignClient {
 
     @GetMapping("/{id}")

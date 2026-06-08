@@ -19,4 +19,6 @@ public class Constant {
     public static final String BLOOM_FILTER_HANDLER_VOUCHER = "voucher";
     
     public static final String DELAY_VOUCHER_REMINDER ="h_delay_voucher_reminder";
+
+    public static final String USER_BEHAVIOR_TOPIC = "user_behavior_topic";
 }

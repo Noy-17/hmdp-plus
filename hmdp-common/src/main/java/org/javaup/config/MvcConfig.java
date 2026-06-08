@@ -28,7 +28,11 @@ public class MvcConfig implements WebMvcConfigurer {
                         "/user/*",
                         "/user/batch",
                         "/user/info/**",
-                        "/follow/followers/*"
+                        "/follow/followers/*",
+                        "/follow/followings/*",
+                        "/voucher-internal/**",
+                        "/ai-internal/**",
+                        "/ai/**"
                 ).order(1);
         registry.addInterceptor(new RefreshTokenInterceptor(stringRedisTemplate)).addPathPatterns("/**").order(0);
     }

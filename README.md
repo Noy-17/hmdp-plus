@@ -2,7 +2,7 @@
 
 > 原项目 [hmdp-plus](https://gitee.com/java-up-up/hmdp-plus) 由 **阿星不是程序员（JavaUp）** 开发，在经典"黑马点评"基础上补齐了令牌桶限流、Kafka 可靠消息、Lua 原子扣减、分库分表、对账一致性闭环等高并发能力。基于 Spring Boot 3 构建，是付费知识星球的专属内容。
 >
-> **本仓库是在原作基础上的魔改版本**，主要变更：(1) Spring Boot 3 → 4，(2) Kafka → RabbitMQ，(3) 单体架构拆分为 6 个独立微服务，(4) 为 Spring Cloud Alibaba 全套体系铺路（Nacos + Gateway + OpenFeign + Sentinel + Seata），(5) 新增 Elasticsearch 搜索引擎替代 MySQL LIKE + Redis GEO。
+> **本仓库是在原作基础上的魔改版本**，主要变更：(1) Spring Boot 3 → 4，(2) Kafka → RabbitMQ，(3) 单体架构拆分为 7 个独立微服务，(4) 为 Spring Cloud Alibaba 全套体系铺路（Nacos + Gateway + OpenFeign + Sentinel + Seata），(5) 新增 Elasticsearch 搜索引擎替代 MySQL LIKE + Redis GEO，(6) 新增 AI Agent 服务（LLM 智能搜索/推荐/行为采集）。
 
 ## 一、项目概述
 
@@ -14,14 +14,15 @@
 |------|-------------|--------|
 | Spring Boot | 3.x | **4.0.6** |
 | 消息队列 | Kafka | **RabbitMQ 4.x** |
-| 架构 | 单体 | **6 微服务** + Gateway |
+| 架构 | 单体 | **7 微服务** + Gateway |
 | 跨域调用 | 进程内 | **OpenFeign**（Nacos 服务发现） |
 | 服务发现 | 无 | **Nacos 3.1.0** |
 | 网关 | 无 | **Spring Cloud Gateway**（:8080） |
 | 搜索 | MySQL LIKE + Redis GEO | **Elasticsearch**（全文检索 + geo_distance） |
 | 事务 | 本地事务 | Seata 分布式事务（AT 模式，2.5.0） |
+| AI | 无 | **LLM Agent**（智能搜索/个性化推荐） |
 
-### 6 个微服务
+### 7 个微服务
 
 | 服务 | 端口 | 职责 |
 |------|------|------|
@@ -32,6 +33,7 @@
 | `hmdp-voucher-service` | 8083 | 秒杀全链路（Lua 扣减 → RabbitMQ → 订单 → 对账） |
 | `hmdp-blog-service` | 8084 | 博客/探店/点赞、Feed 滚动分页 |
 | `hmdp-follow-service` | 8085 | 关注/取关/共同关注 |
+| `hmdp-ai-agent-service` | 8087 | AI Agent（LLM 智能搜索/个性化推荐/行为采集） |
 
 ### 核心技术栈
 
@@ -123,7 +125,7 @@ bash upload.sh   # 一键上传到 Nacos（Nacos 需已启动）
 ```bash
 mvn clean package -DskipTests
 
-# Gateway + 6 个微服务（各开一个终端）：
+# Gateway + 7 个微服务（各开一个终端）：
 java -jar hmdp-gateway/target/hmdp-gateway-0.0.1-SNAPSHOT.jar         # :8080
 java -jar hmdp-shop-service/target/hmdp-shop-service-0.0.1-SNAPSHOT.jar    # :8081
 java -jar hmdp-search-service/target/hmdp-search-service-0.0.1-SNAPSHOT.jar # :8086
@@ -131,6 +133,7 @@ java -jar hmdp-user-service/target/hmdp-user-service-0.0.1-SNAPSHOT.jar    # :80
 java -jar hmdp-voucher-service/target/hmdp-voucher-service-0.0.1-SNAPSHOT.jar # :8083
 java -jar hmdp-blog-service/target/hmdp-blog-service-0.0.1-SNAPSHOT.jar    # :8084
 java -jar hmdp-follow-service/target/hmdp-follow-service-0.0.1-SNAPSHOT.jar # :8085
+java -jar hmdp-ai-agent-service/target/hmdp-ai-agent-service-0.0.1-SNAPSHOT.jar # :8087
 ```
 
 也可用 `mvn spring-boot:run -pl <模块名>` 开发模式。注意 ShardingSphere 用 `ResourceUtils.getFile()` 读取 YAML，嵌套 JAR 无法正确解析路径，必须用 `spring-boot:run` 或 `java -jar`。
@@ -163,6 +166,7 @@ hmdp-plus (父 POM)
 ├── hmdp-voucher-service      # :8083 秒杀全链路（RabbitMQ + 令牌桶 + Lua）
 ├── hmdp-blog-service         # :8084 博客/探店/点赞（Feign→User+Follow）
 ├── hmdp-follow-service       # :8085 关注/取关（Feign→User）
+├── hmdp-ai-agent-service     # :8087 AI Agent（LLM 搜索/推荐/行为采集）
 
 ├── hmdp-gateway              # Spring Cloud Gateway :8080 (WebFlux)
 ├── hmdp-service-api-feign    # OpenFeign 接口 + FeignAuthConfig
@@ -192,6 +196,8 @@ public interface UserFeignClient {
 | voucher | UserInfoFeignClient | hmdp-user-service |
 | follow | UserFeignClient | hmdp-user-service |
 | blog | UserFeignClient, FollowFeignClient | hmdp-user-service, hmdp-follow-service |
+| ai-agent | SearchFeignClient, VoucherInternalFeignClient, FollowInternalFeignClient, ShopTypeFeignClient | hmdp-search-service, hmdp-voucher-service, hmdp-follow-service, hmdp-shop-service |
+| voucher | AiVoucherRankingClient | hmdp-ai-agent-service |
 
 `FeignAuthConfig` RequestInterceptor 自动传播 Authorization header。
 
@@ -610,7 +616,262 @@ public boolean autoIssueVoucherToEarliestSubscriber(Long voucherId, Long exclude
 }
 ```
 
-## 十、前端功能
+## 十、AI Agent 智能服务
+
+hmdp-ai-agent-service（端口 8087）是项目的"智能大脑"，为原有系统注入三项 AI 能力：用自然语言搜索商铺、根据个人偏好推荐优惠券、结合好友动态推荐商铺。
+
+### 10.1 为什么需要？
+
+传统搜索的痛点："火锅"两个字，用户得先猜到商铺列表里有叫这名字的店，否则搜不到。而 AI 能理解"火锅是一种美食"，自动把查询映射到正确的类型筛选。
+
+传统推荐的痛点：所有用户看到一样的"热门推荐"。AI 能根据你是谁——买过什么券、常逛哪片区、消费水平如何——给出针对你个人的推荐理由。
+
+### 10.2 整体架构
+
+```
+浏览器/前端
+  │
+  ▼
+Gateway (:8080)  ── /api/ai/** ──► hmdp-ai-agent-service (:8087)
+                                      │
+                         ┌────────────┼────────────┐
+                         │            │            │
+                       搜索         券推荐       商铺推荐
+                         │            │            │
+                    LLM 查类型ID   LLM 分析偏好  LLM 结合好友
+                         │            │            │
+                    Feign→ES     Feign→券列表  Feign→关注列表
+                         │            │            │
+                    后置过滤        返回Top5      返回Top5
+                         │
+                    返回结果 + 意图说明
+```
+
+三条链路共用一个 LLM 客户端（OkHttp 调 DeepSeek），按场景拼不同的 System Prompt。搜索走 Function Calling 提取结构化参数，推荐走纯文本推理返回 JSON 结果。
+
+### 10.3 为什么不直接用 Spring AI？
+
+Spring AI 1.0.x 面向 Spring Boot 3.x，Spring AI 2.0.0-Mx 支持 SB4 但是里程碑版本，已知与项目中的 reactor-core 和 ES 客户端版本冲突。
+
+OkHttp 直调方案仅约 200 行代码就覆盖了全部需求：`LlmClient` 负责 HTTP 通信和 JSON 解析，`ToolDefinition`/`LlmToolResponse` 是通用抽象，OpenAI 兼容 API 零依赖冲突。
+
+### 10.4 智能搜索 — "西湖区高分火锅店，人均100以内"
+
+这是三个功能中最复杂的一个。核心挑战是：用户说的是人话，ES 要的是结构化参数（typeId、area、priceRange）。LLM 的 Function Calling 能力恰好解决这个"翻译"问题。
+
+**流程**：
+
+```
+用户输入 "西湖区评分高的火锅店，人均100以内"
+  │
+  ▼
+① AiSearchService 构建"工具"定义（告诉 LLM：
+   "你有这样一个 extractSearchParams 函数可以调用，
+   参数包括 keyword, typeId(1=美食,2=KTV,...), area, avgPriceMin/Max, sortBy"）
+  │
+  ▼
+② LLM 判断：这是商铺搜索 → 调用 extractSearchParams
+   返回：{ "typeId": 1, "area": "西湖区", "avgPriceMax": 100, "sortBy": "score" }
+  │
+  ▼
+③ 如果 LLM 不调用工具（用户说了和搜索无关的话）
+   → 返回 "抱歉，我只能帮您搜索商铺，例如：……"
+  │
+  ▼
+④ 拿 typeId=1 → Feign 调 search-service → ES 返回所有美食商铺
+  │
+  ▼
+⑤ postFilter：内存中筛 area 含"西湖区"、avgPrice≤100
+  │
+  ▼
+⑥ 返回结果 + 友好意图说明：
+   "区域西湖区，人均100元以内，为您找到3家商铺"
+```
+
+**工具定义是这个功能的心脏**。它不是硬编码的 if-else，而是一个通用的序列化结构：
+
+```java
+// AiSearchService — 构建工具定义，告诉 LLM 它能调什么、参数是什么
+ToolDefinition searchTool = new ToolDefinition(
+    "extractSearchParams",       // 工具名 — LLM 用它来决定是否调用
+    "从自然语言中提取商铺搜索参数。与商铺搜索无关的查询不要调用此工具。"
+        + "\n可用的商铺类型及ID: 1:美食, 2:KTV, 3:美发, ...",
+    Map.of(
+        "type", "object",
+        "properties", Map.of(
+            "keyword", Map.of("type", "string",
+                "description", "商铺名称关键字，不要将菜系/食物类型名填入此字段"),
+            "typeId", Map.of("type", "integer",
+                "description", "食物类(火锅/川菜/日料)→1(美食)，KTV→2，美发→3"),
+            "area", Map.of("type", "string"),
+            "avgPriceMin", Map.of("type", "number"),
+            "avgPriceMax", Map.of("type", "number"),
+            "sortBy", Map.of("type", "string", "enum", List.of("score","avgPrice","distance"))
+        )
+    )
+);
+```
+
+这个设计的精妙之处在于：**加一个搜索维度不需要写新代码**。未来要支持"按距离排序"或"按评分筛选"，只需在 properties Map 里加一个键值对，LLM 就会自动理解并提取。
+
+**LLM 调用与分发**：
+
+```java
+// LlmClient — chatWithTools 方法的响应解析（OpenAI 兼容 API）
+public LlmToolResponse chatWithTools(String systemPrompt, String userMessage,
+                                      List<ToolDefinition> tools) {
+    JSONObject body = buildRequestBody(systemPrompt, userMessage);
+    body.set("tools", buildToolsArray(tools));
+    body.set("tool_choice", "auto");              // ★ 告诉 LLM 自己决定是否调工具
+
+    String raw = doRequest(body, 0);              // OkHttp POST → /v1/chat/completions
+    return parseToolResponse(raw);
+}
+
+// AiSearchService — 根据 LLM 决策分发
+LlmToolResponse result = llmClient.chatWithTools(prompt, query, List.of(searchTool));
+if (!result.isToolCalled()) {
+    return buildOutOfScope();                     // LLM 判断"不关我事" → 友好拒绝
+}
+SearchIntent intent = parseIntent(result.getArguments());
+executeSearch(intent);                            // typeId→Feign→ES→postFilter
+```
+
+**为什么这样设计？** 如果把类型映射（火锅→美食）写成 Java switch-case，每新增一种商铺类型都要改代码、重新部署。把这件事交给 LLM，新增类型只要在工具描述中加一行文字。更重要的是，LLM 能处理"想吃辣的"→映射到川菜/火锅、处理"约会去处"→映射到高评分浪漫类型——这种语义泛化能力是硬编码做不到的。
+
+**兜底策略 — typeId 优先于 keyword**：LLM 被明确引导"将菜系/食物类型映射到 typeId，不要放到 keyword 字段"。keyword 仅在用户明确说到商铺名称时才填充。这避免了全文搜索"火锅"时因为商铺名没包含"火锅"二字而返回空的结果。
+
+### 10.5 个性化推荐 — 让推荐"懂你"
+
+**优惠券推荐**的思路很直接：你是谁 → 有什么券 → 哪些最合适 → 给出理由。
+
+```
+POST /api/ai/recommend/voucher  { "userId": 1 }
+  │
+  ▼
+① UserProfileService.formatForPrompt(userId)
+   → "本周购买3次，浏览商铺12次，最近搜索:茶饮,烧肉,居酒屋"
+  │
+  ▼
+② 如果画像为空（新用户）→ 降级：拉历史订单 + 用户等级做冷启动
+  │
+  ▼
+③ Feign 调 voucher-service → 拿当前可用券列表（id, 标题, 面值, 门槛）
+  │
+  ▼
+④ 拼 Prompt：
+   "你是一个个性化推荐引擎。
+    用户偏好: 本周购买3次，最近搜索茶饮、烧肉……
+    以下是以 JSON 格式的可用券: [{id:1, title:"80元代金券", payValue:80……}]
+    返回 Top5，JSON 数组，字段: id, name, reason, score (0-1)"
+  │
+  ▼
+⑤ LLM 推理 → 返回 [{"id":1,"name":"80元代金券","reason":"本周购买活跃，性价比高","score":0.8}]
+```
+
+**商铺推荐**比券推荐多了一个维度——社交信号：
+
+```java
+// AiShopRecommendService — 社交上下文采集
+StringBuilder socialCtx = new StringBuilder();
+var followings = followInternalFeignClient.getFollowings(userId).getData();
+if (followings != null && !followings.isEmpty()) {
+    socialCtx.append("关注了").append(followings.size()).append("位用户");
+}
+// → Prompt 中加入 "社交关系: 关注了12位用户"
+// → LLM 会将"好友常去""社交热门"等信号纳入推荐理由
+```
+
+这就是为什么券推荐的回答偏"性价比/消费匹配"，而商铺推荐的回答会出现"适合与朋友聚会""好友常去"——上下文不同。
+
+### 10.6 用户画像系统 — 三层记忆
+
+这是整个 Agent 服务的底座。没有画像，推荐就是盲推。
+
+```
+业务事件                               AI 推荐时读取
+  │                                       │
+  ▼                                       ▼
+UserBehaviorConsumer                UserProfileService
+  │                                  .formatForPrompt()
+  ├──① tb_user_behavior                 │
+  │   (MySQL 审计日志，只写不读)         │
+  │                                     ▼
+  ├──② user:behavior:recent:{id}       ③ user:profile:{id}
+  │   (Redis List, LTRIM 50)          (Redis Hash, 推荐直接读)
+  │
+  └──③ user:profile:{id}
+      (Redis Hash, 增量更新)
+```
+
+**为什么三层？** 最直观的做法是把原始事件流直接塞进 Prompt："用户搜了A、B、C，看了X、Y、Z，买了M、N……"。但几十条事件 = 几百 Token = 每次推荐浪费。更糟的是，LLM 每次都要重新从原始事件中归纳偏好，结果不稳定。
+
+三层各司其职：
+- **MySQL 层**：审计和重算来源。画像算错了可以从原始事件重放重建
+- **Redis List 层**：最近 50 条行为的原文快照，用于需要查看"最近具体做了什么"的场景
+- **Redis Hash 层**：聚合后的偏好摘要。推荐时直接格式化为 `"本周购买3次，浏览12次"` 进 Prompt，不用重新归纳
+
+**增量更新 vs 全量重算**：
+
+```java
+// UserProfileService — 消费事件时增量更新 Hash
+public void updateProfile(UserBehaviorEvent event) {
+    String key = "user:profile:" + event.getUserId();
+
+    switch (event.getEventType()) {
+        case "PURCHASE":
+            // 原子自增购买次数，无需先查再写
+            redis.opsForHash().increment(key, "purchaseFrequency", 1);
+            break;
+        case "VIEW_SHOP":
+            redis.opsForHash().increment(key, "shopViews", 1);
+            break;
+        case "SEARCH":
+            // 最近搜索词 LPUSH + LTRIM，天然保持最新 5 条
+            redis.opsForList().leftPush("user:behavior:recent:" + userId, keyword);
+            redis.opsForList().trim(key, 0, 49);
+            break;
+    }
+    redis.expire(key, 30, TimeUnit.DAYS);
+}
+```
+
+所有更新操作都用了 Redis 原子命令（`hincrby`/`lpush`/`ltrim`），天然幂等——同一条消息重复消费不会导致计数翻倍。
+
+**冷启动**：新用户画像为空 → `formatForPrompt` 返回空字符串 → `AiVoucherRecommendService` 检测到降级拉取历史订单和等级做冷启动。随着用户持续使用，画像自动积累，此后推荐不再需要降级。
+
+### 10.7 行为采集管道
+
+画像系统依赖各服务主动上报用户行为。这是分布式的——6 个服务各自埋点，通过 RabbitMQ 汇聚到 ai-agent-service：
+
+```
+shop-service    ──→ VIEW_SHOP ──┐
+blog-service    ──→ LIKE_BLOG  ─┤
+search-service  ──→ SEARCH    ──┼──→ user_behavior_topic ──→ UserBehaviorConsumer
+voucher-service ──→ PURCHASE  ──┘        │
+                                          ├─ MySQL (tb_user_behavior)
+                                          ├─ Redis List (最近50条)
+                                          └─ Redis Hash (增量画像)
+```
+
+每个服务新增一个约 15 行的 `UserBehaviorProducer`，继承框架的 `AbstractProducerHandler`：
+
+```java
+@Component
+public class UserBehaviorProducer extends AbstractProducerHandler<MessageExtend<UserBehaviorEvent>> {
+    public void send(UserBehaviorEvent event) {
+        sendPayload(prefix + "-" + USER_BEHAVIOR_TOPIC, event);
+    }
+}
+// 调用处只需要一行：
+userBehaviorProducer.send(new UserBehaviorEvent(userId, "VIEW_SHOP", shopId, "shop", now));
+```
+
+消费端 `UserBehaviorConsumer` 继承 `AbstractConsumerHandler`，实现 `doConsume()`：写 DB → 更新 Redis 画像。框架自动处理消息反序列化、异常捕获、DLQ 路由。
+
+---
+
+## 十一、前端功能
 
 前端基于 Vue 3.5 + Vite 6 + Element Plus 2.9，10 个页面。关键交互优化：
 

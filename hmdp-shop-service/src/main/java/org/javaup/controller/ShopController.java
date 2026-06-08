@@ -5,9 +5,11 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import jakarta.annotation.Resource;
 import org.javaup.dto.Result;
+import org.javaup.dto.UserBehaviorEvent;
 import org.javaup.entity.Shop;
 import org.javaup.rabbitmq.message.ShopSyncMessage;
 import org.javaup.rabbitmq.producer.ShopSyncProducer;
+import org.javaup.rabbitmq.producer.UserBehaviorProducer;
 import org.javaup.service.IShopService;
 import org.javaup.utils.SystemConstants;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +31,8 @@ public class ShopController {
 
     @Resource
     private ShopSyncProducer shopSyncProducer;
+    @Resource
+    private UserBehaviorProducer userBehaviorProducer;
 
     @Value("${prefix.distinction.name:hmdp}")
     private String prefix;
@@ -40,7 +44,23 @@ public class ShopController {
      */
     @GetMapping("/{id}")
     public Result queryShopById(@PathVariable("id") Long id) {
-        return shopService.queryById(id);
+        Result result = shopService.queryById(id);
+        emitViewShopEvent(id);
+        return result;
+    }
+
+    private void emitViewShopEvent(Long shopId) {
+        try {
+            Long userId = org.javaup.utils.UserHolder.getUser().getId();
+            UserBehaviorEvent event = new UserBehaviorEvent();
+            event.setUserId(userId);
+            event.setEventType("VIEW_SHOP");
+            event.setTargetId(shopId);
+            event.setTargetType("SHOP");
+            event.setTimestamp(System.currentTimeMillis());
+            userBehaviorProducer.send(event);
+        } catch (Exception ignored) {
+        }
     }
 
     /**

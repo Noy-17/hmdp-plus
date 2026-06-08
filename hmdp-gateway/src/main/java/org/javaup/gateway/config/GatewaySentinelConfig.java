@@ -55,6 +55,10 @@ public class GatewaySentinelConfig {
                 .setCount(200)
                 .setIntervalSec(1));
 
+        rules.add(new GatewayFlowRule("ai-agent-service")
+                .setCount(100)
+                .setIntervalSec(1));
+
         GatewayRuleManager.loadRules(rules);
     }
 

@@ -35,7 +35,12 @@ public class FollowController {
     }
 
     @GetMapping("/followers/{followUserId}")
-    public Result<List<Long>> getFollowerIds(@PathVariable Long followUserId) {
+    public Result<List<Long>> getFollowerIds(@PathVariable("followUserId") Long followUserId) {
         return followService.getFollowerIds(followUserId);
+    }
+
+    @GetMapping("/followings/{userId}")
+    public Result<List<Long>> getFollowings(@PathVariable("userId") Long userId) {
+        return followService.getFollowings(userId);
     }
 }

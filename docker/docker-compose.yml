@@ -15,6 +15,7 @@ services:
       - ./sql/hmdp_0.sql:/docker-entrypoint-initdb.d/02_hmdp_0.sql
       - ./sql/hmdp_1.sql:/docker-entrypoint-initdb.d/03_hmdp_1.sql
       - ./sql/seata_undo_log.sql:/docker-entrypoint-initdb.d/04_seata_undo_log.sql
+      - ./sql/hmdp_ai_init.sql:/docker-entrypoint-initdb.d/05_hmdp_ai_init.sql
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci

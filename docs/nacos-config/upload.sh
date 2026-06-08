@@ -32,6 +32,7 @@ FILES=(
     "hmdp-follow-service.yaml|${SCRIPT_DIR}/hmdp-follow-service.yaml"
     "hmdp-gateway.yaml|${SCRIPT_DIR}/hmdp-gateway.yaml"
     "hmdp-search-service.yaml|${SCRIPT_DIR}/hmdp-search-service.yaml"
+    "hmdp-ai-agent-service.yaml|${SCRIPT_DIR}/hmdp-ai-agent-service.yaml"
     "seataServer.properties|${SCRIPT_DIR}/seataServer.properties"
 )
 

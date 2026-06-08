@@ -5,6 +5,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.javaup.consumer.AbstractConsumerHandler;
 import org.javaup.core.RedisKeyManage;
+import org.javaup.dto.UserBehaviorEvent;
 import org.javaup.enums.BaseCode;
 import org.javaup.enums.BusinessType;
 import org.javaup.enums.LogType;
@@ -13,6 +14,7 @@ import org.javaup.exception.HmdpFrameException;
 import org.javaup.message.MessageExtend;
 import org.javaup.model.SeckillVoucherFullModel;
 import org.javaup.rabbitmq.message.SeckillVoucherMessage;
+import org.javaup.rabbitmq.producer.UserBehaviorProducer;
 import org.javaup.rabbitmq.redis.RedisVoucherData;
 import org.javaup.redis.RedisCache;
 import org.javaup.redis.RedisKeyBuild;
@@ -68,6 +70,9 @@ public class SeckillVoucherConsumer extends AbstractConsumerHandler<SeckillVouch
 
     @Resource
     private IAutoIssueNotifyService autoIssueNotifyService;
+
+    @Resource
+    private UserBehaviorProducer userBehaviorProducer;
 
     private static final int CPU_CORES = Runtime.getRuntime().availableProcessors();
     private static final int EXECUTOR_THREADS = Math.max(2, CPU_CORES);
@@ -163,6 +168,17 @@ public class SeckillVoucherConsumer extends AbstractConsumerHandler<SeckillVouch
         Long voucherId = messageBody.getVoucherId();
         Long orderId = messageBody.getOrderId();
         SECKILL_ORDER_CONSUME_TASK_EXECUTOR.execute(() -> {
+            try {
+                UserBehaviorEvent event = new UserBehaviorEvent();
+                event.setUserId(userId);
+                event.setEventType("PURCHASE");
+                event.setTargetId(voucherId);
+                event.setTargetType("VOUCHER");
+                event.setTimestamp(System.currentTimeMillis());
+                userBehaviorProducer.send(event);
+            } catch (Exception e) {
+                log.warn("发送PURCHASE行为事件失败，忽略", e);
+            }
             try {
                 RedisKeyBuild subscribeZSetKey = RedisKeyBuild.createRedisKey(
                         RedisKeyManage.SECKILL_SUBSCRIBE_ZSET_TAG_KEY,

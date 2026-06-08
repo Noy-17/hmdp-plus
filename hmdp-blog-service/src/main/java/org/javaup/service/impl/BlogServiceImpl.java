@@ -6,11 +6,13 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.javaup.dto.Result;
 import org.javaup.dto.ScrollResult;
+import org.javaup.dto.UserBehaviorEvent;
 import org.javaup.dto.UserDTO;
 import org.javaup.entity.Blog;
 import org.javaup.feign.FollowFeignClient;
 import org.javaup.feign.UserFeignClient;
 import org.javaup.mapper.BlogMapper;
+import org.javaup.rabbitmq.producer.UserBehaviorProducer;
 import org.javaup.service.IBlogService;
 import org.javaup.toolkit.SnowflakeIdGenerator;
 import org.javaup.utils.SystemConstants;
@@ -54,6 +56,9 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
 
     @Resource
     private SnowflakeIdGenerator snowflakeIdGenerator;
+
+    @Resource
+    private UserBehaviorProducer userBehaviorProducer;
 
     @Override
     public Result queryHotBlog(Integer current) {
@@ -119,6 +124,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
             // 3.2.保存用户到Redis的set集合  zadd key value score
             if (isSuccess) {
                 stringRedisTemplate.opsForZSet().add(key, userId.toString(), System.currentTimeMillis());
+                emitLikeBlogEvent(userId, id);
             }
         } else {
             // 4.如果已点赞，取消点赞
@@ -242,6 +248,19 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         if (user != null) {
             blog.setName(user.getNickName());
             blog.setIcon(user.getIcon());
+        }
+    }
+
+    private void emitLikeBlogEvent(Long userId, Long blogId) {
+        try {
+            UserBehaviorEvent event = new UserBehaviorEvent();
+            event.setUserId(userId);
+            event.setEventType("LIKE_BLOG");
+            event.setTargetId(blogId);
+            event.setTargetType("BLOG");
+            event.setTimestamp(System.currentTimeMillis());
+            userBehaviorProducer.send(event);
+        } catch (Exception ignored) {
         }
     }
 }

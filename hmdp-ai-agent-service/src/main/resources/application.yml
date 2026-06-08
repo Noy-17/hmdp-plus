@@ -1,0 +1,13 @@
+server:
+  port: ${AI_AGENT_SERVICE_PORT:8087}
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_HOST:192.168.137.128}:8848
+        namespace: ${NACOS_NAMESPACE:}
+        group: DEFAULT_GROUP
+    sentinel:
+      transport:
+        port: 8726

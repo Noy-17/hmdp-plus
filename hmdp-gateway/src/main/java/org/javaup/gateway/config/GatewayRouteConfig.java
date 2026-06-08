@@ -15,6 +15,10 @@ public class GatewayRouteConfig {
                         .path("/api/shop/of/name", "/api/shop/of/type")
                         .filters(f -> f.stripPrefix(1))
                         .uri("lb://hmdp-search-service"))
+                .route("ai-agent-service", r -> r
+                        .path("/api/ai/**")
+                        .filters(f -> f.stripPrefix(1))
+                        .uri("lb://hmdp-ai-agent-service"))
                 .route("shop-service", r -> r
                         .path("/api/shop-type/**", "/api/shop/**")
                         .filters(f -> f.stripPrefix(1))

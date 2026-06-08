@@ -348,35 +348,50 @@ curl "http://localhost:8080/api/shop/1"
 
 ---
 
-## 阶段九：Spring AI Agent 服务
+## 阶段九：Spring AI Agent 服务 ✅
 
-### 9.1 新建 hmdp-ai-agent 模块
+### 9.1 新建 hmdp-ai-agent-service 模块
 
-- 依赖 `spring-ai-starter-openai`
-- 对接 DeepSeek / OpenAI 等大模型
-- 用户画像数据聚合到 Redis Hash（异步 MQ 事件 → 画像计算 → Redis）
+- **技术决策**：不用 Spring AI，用 OkHttp 4.12.0 直调 DeepSeek/OpenAI 兼容 API。Spring AI 2.0.0-Mx 有 reactor-core/ES 客户端版本冲突
+- OkHttp ~200 行代码覆盖全部需求（LlmClient + ToolDefinition + LlmToolResponse）
+- 用户画像三层记忆：tb_user_behavior（审计）→ Redis List（最近 50 条）→ Redis Hash（增量聚合偏好快照）
+- 自有数据库 `hmdp_ai`（HikariCP，非 ShardingSphere）
 
-### 9.2 推荐场景
+### 9.2 AI 功能（全部已验证通过）
 
-| 场景 | 数据来源 | 说明 |
+| 场景 | 端点 | 说明 |
 |---|---|---|
-| 个性化优惠券推荐 | 用户画像 + 历史订单 | LLM 分析用户偏好 |
-| 商铺筛选推荐 | 用户画像 + ES 搜索结果 | AI 理解用户意图，组合 ES 查询 |
-| 智能搜索 | 自然语言查询 | "高性价比火锅店" → AI 解析 → ES 查询 |
+| 智能搜索 | `POST /api/ai/search` | LLM Function Calling 提取意图 → Feign → ES → 后置过滤 |
+| 个性化券推荐 | `POST /api/ai/recommend/voucher` | 用户画像 + 可用券 → LLM 排名 |
+| 商铺推荐 | `POST /api/ai/recommend/shop` | 偏好 + 社交信号 → LLM |
 
-### 9.3 用户画像数据流
+### 9.3 用户行为采集管道
 
 ```
-业务事件 (MQ) → 画像计算服务 → Redis Hash → AI Agent 读取
-                         ↑
-              用户行为 + 订单历史 + 搜索记录
+业务事件 (4 服务埋点) → MQ → UserBehaviorConsumer
+  → 1. tb_user_behavior (审计/重算)
+  → 2. user:behavior:recent:{id} (Redis List, LTRIM 50)
+  → 3. user:profile:{id} (Redis Hash, 增量更新偏好快照)
 ```
 
-### 9.4 验证
+### 9.4 涉及模块
 
-- Agent 服务注册到 Nacos
-- 通过 Gateway 调用 Agent API
-- 用户输入自然语言需求，返回个性化推荐结果
+- **hmdp-ai-agent-service** (新建，16 个 Java 文件)
+- **hmdp-service-api** — 新增 10 个 DTO
+- **hmdp-service-api-feign** — 新增 5 个 Feign 接口
+- **4 个服务** (search/shop/blog/voucher) 各新增 UserBehaviorProducer 埋点
+- **voucher-service** — 新增 VoucherInternalController + 到券提醒 AI 排名增强
+- **follow-service** — FollowController 新增 `/followings/{userId}`
+- **hmdp-common** — Constant 新增 USER_BEHAVIOR_TOPIC
+- **hmdp-gateway** — GatewayRouteConfig 新增 `/api/ai/**` 路由
+- **docker/sql/** — 新增 `hmdp_ai_init.sql`
+- **docs/nacos-config/** — 新增 `hmdp-ai-agent-service.yaml`
+
+### 9.5 验证
+
+- AI 搜索、券推荐、商铺推荐全部通过 Gateway 端到端验证
+- 行为采集管道在 4 个服务中埋点完整
+- 到券提醒 AI 排名可通过 Nacos 开关控制（`seckill.autoissue.ai.ranking.enabled`）
 
 ---
 

@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: hmdp-ai-agent-service
+  cloud:
+    nacos:
+      config:
+        server-addr: ${NACOS_HOST:192.168.137.128}:8848
+        namespace: ${NACOS_NAMESPACE:}
+        group: DEFAULT_GROUP
+        file-extension: yaml
+  config:
+    import:
+      - nacos:${spring.application.name}.yaml?refresh=true

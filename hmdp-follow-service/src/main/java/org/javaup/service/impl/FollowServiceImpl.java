@@ -104,4 +104,15 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
                 .collect(Collectors.toList());
         return Result.ok(ids);
     }
+
+    @Override
+    public Result<List<Long>> getFollowings(Long userId) {
+        List<Follow> follows = lambdaQuery()
+                .eq(Follow::getUserId, userId)
+                .list();
+        List<Long> ids = follows.stream()
+                .map(Follow::getFollowUserId)
+                .collect(Collectors.toList());
+        return Result.ok(ids);
+    }
 }

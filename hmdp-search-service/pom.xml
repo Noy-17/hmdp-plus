@@ -35,6 +35,11 @@
             <version>${revision}</version>
         </dependency>
         <dependency>
+            <groupId>org.javaup</groupId>
+            <artifactId>hmdp-mq-producer-framework</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <exclusions>

@@ -40,6 +40,7 @@
         <module>hmdp-follow-service</module>
         <module>hmdp-blog-service</module>
         <module>hmdp-search-service</module>
+        <module>hmdp-ai-agent-service</module>
         <module>hmdp-redisson-framework</module>
         <module>hmdp-redis-tool-framework</module>
         <module>hmdp-id-generator-framework</module>

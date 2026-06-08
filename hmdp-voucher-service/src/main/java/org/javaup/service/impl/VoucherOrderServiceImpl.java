@@ -42,7 +42,11 @@ import io.seata.spring.annotation.GlobalTransactional;
 import org.javaup.redis.RedisCacheImpl;
 import org.javaup.redis.RedisKeyBuild;
 import org.javaup.repeatexecutelimit.annotion.RepeatExecuteLimit;
+import org.javaup.feign.AiVoucherRankingClient;
 import org.javaup.feign.UserInfoFeignClient;
+import org.javaup.dto.RankCandidatesRequest;
+import org.javaup.dto.RankedCandidatesResponse;
+import org.javaup.dto.RankedCandidatesResponse.RankedCandidate;
 import org.javaup.service.ISeckillVoucherService;
 import org.javaup.service.IVoucherOrderRouterService;
 import org.javaup.service.IVoucherOrderService;
@@ -140,6 +144,14 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     
     @Resource
     private IVoucherReconcileLogService voucherReconcileLogService;
+    @Resource
+    private AiVoucherRankingClient aiVoucherRankingClient;
+
+    @org.springframework.beans.factory.annotation.Value("${seckill.autoissue.ai.ranking.enabled:false}")
+    private boolean aiRankingEnabled;
+
+    @org.springframework.beans.factory.annotation.Value("${seckill.autoissue.ai.ranking.candidateCount:20}")
+    private int aiRankingCandidateCount;
     
 
     private static final DefaultRedisScript<Long> SECKILL_SCRIPT;
@@ -651,9 +663,65 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     }
     
     private String findEarliestCandidate(final Long voucherId, final Long excludeUserId) {
+        if (aiRankingEnabled) {
+            return findCandidateWithAiRanking(voucherId, excludeUserId);
+        }
+        return findEarliestCandidateFifo(voucherId, excludeUserId);
+    }
+
+    private String findCandidateWithAiRanking(final Long voucherId, final Long excludeUserId) {
+        List<Long> candidates = gatherTopCandidates(voucherId, excludeUserId, aiRankingCandidateCount);
+        if (CollectionUtil.isEmpty(candidates)) {
+            return null;
+        }
+        try {
+            RankCandidatesRequest req = new RankCandidatesRequest(voucherId, candidates);
+            Result<RankedCandidatesResponse> result = aiVoucherRankingClient.rankCandidates(req);
+            if (result != null && result.getData() != null && !CollectionUtil.isEmpty(result.getData().getRanked())) {
+                return String.valueOf(result.getData().getRanked().get(0).getUserId());
+            }
+        } catch (Exception e) {
+            log.warn("AI候选排名失败，降级到FIFO。voucherId={}, err={}", voucherId, e.getMessage());
+        }
+        return findEarliestCandidateFifo(voucherId, excludeUserId);
+    }
+
+    private List<Long> gatherTopCandidates(final Long voucherId, final Long excludeUserId, int count) {
         RedisKeyBuild subscribeZSetKey = RedisKeyBuild.createRedisKey(RedisKeyManage.SECKILL_SUBSCRIBE_ZSET_TAG_KEY, voucherId);
         RedisKeyBuild purchasedSetKey = RedisKeyBuild.createRedisKey(RedisKeyManage.SECKILL_USER_TAG_KEY, voucherId);
-        
+        List<Long> result = new java.util.ArrayList<>();
+        long offset = 0L;
+        while (result.size() < count) {
+            Set<ZSetOperations.TypedTuple<String>> page = redisCache.rangeByScoreWithScoreForSortedSet(
+                    subscribeZSetKey,
+                    Double.NEGATIVE_INFINITY,
+                    Double.POSITIVE_INFINITY,
+                    offset,
+                    (long) count,
+                    String.class
+            );
+            if (CollectionUtil.isEmpty(page)) {
+                break;
+            }
+            for (ZSetOperations.TypedTuple<String> tuple : page) {
+                if (result.size() >= count) break;
+                if (Objects.isNull(tuple) || Objects.isNull(tuple.getValue())) continue;
+                String uidStr = tuple.getValue();
+                if (StrUtil.isBlank(uidStr)) continue;
+                if (Objects.nonNull(excludeUserId) && Objects.equals(uidStr, String.valueOf(excludeUserId))) continue;
+                Boolean purchased = redisCache.isMemberForSet(purchasedSetKey, uidStr);
+                if (BooleanUtil.isTrue(purchased)) continue;
+                result.add(Long.valueOf(uidStr));
+            }
+            offset += count;
+        }
+        return result;
+    }
+
+    private String findEarliestCandidateFifo(final Long voucherId, final Long excludeUserId) {
+        RedisKeyBuild subscribeZSetKey = RedisKeyBuild.createRedisKey(RedisKeyManage.SECKILL_SUBSCRIBE_ZSET_TAG_KEY, voucherId);
+        RedisKeyBuild purchasedSetKey = RedisKeyBuild.createRedisKey(RedisKeyManage.SECKILL_USER_TAG_KEY, voucherId);
+
         final long pageCount = 1L;
         long offset = 0L;
         while (true) {

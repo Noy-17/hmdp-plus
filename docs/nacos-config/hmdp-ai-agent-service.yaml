@@ -1,0 +1,77 @@
+prefix:
+  distinction:
+    name: hmdp
+
+spring:
+  autoconfigure:
+    exclude:
+      - com.alibaba.cloud.nacos.endpoint.NacosDiscoveryEndpointAutoConfiguration
+      - org.springframework.cloud.client.discovery.simple.SimpleDiscoveryClientAutoConfiguration
+      - org.springframework.cloud.client.discovery.noop.NoopDiscoveryClientAutoConfiguration
+  main:
+    allow-circular-references: true
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:192.168.137.128}:3306/hmdp_ai?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:192.168.137.128}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  rabbitmq:
+    addresses: ${RABBITMQ_HOST:192.168.137.128}:${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+  jackson:
+    default-property-inclusion: non_null
+  cloud:
+    sentinel:
+      enabled: true
+      eager: true
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD_HOST:192.168.137.128}:8081
+      filter:
+        enabled: true
+
+feign:
+  sentinel:
+    enabled: false
+
+mybatis-plus:
+  type-aliases-package: org.javaup.entity
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+logging:
+  level:
+    org.javaup: info
+  pattern:
+    dateformat: mm:ss.SSS
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "prometheus,health,info"
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+llm:
+  base-url: https://api.deepseek.com
+  api-key: ${LLM_API_KEY:}
+  model: deepseek-chat
+  temperature: 0.3
+  max-tokens: 2000
+  timeout: 30s
+
+seckill:
+  autoissue:
+    ai:
+      ranking:
+        enabled: false
