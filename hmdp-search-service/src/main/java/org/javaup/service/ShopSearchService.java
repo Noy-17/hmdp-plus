@@ -9,7 +9,7 @@ public interface ShopSearchService {
 
     List<ShopDoc> searchByName(String keyword, int page, int size);
 
-    List<ShopDoc> searchByTypeAndLocation(Long typeId, Double x, Double y, int page, int size);
+    List<ShopDoc> searchByTypeAndLocation(Long typeId, Double x, Double y, int page, int size, String sortBy);
 
     void syncFromShop(Shop shop);
 

@@ -7,6 +7,7 @@ import org.javaup.dto.UserBehaviorEvent;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -78,15 +79,24 @@ public class UserProfileService {
             sb.append("点赞博客").append(blogLikes).append("次，");
         }
 
-        String recentKey = RECENT_KEY_PREFIX + userId;
-        var tags = stringRedisTemplate.opsForList().range(recentKey, 0, 4);
-        if (tags != null && !tags.isEmpty()) {
-            sb.append("最近搜索:").append(String.join(",", tags)).append("，");
-        }
-
         if (sb.length() > 0) {
             sb.setLength(sb.length() - 1);
         }
         return sb.toString();
+    }
+
+    public List<Long> getPreferredTypeIds(Long userId) {
+        String recentKey = RECENT_KEY_PREFIX + userId;
+        var tags = stringRedisTemplate.opsForList().range(recentKey, 0, 49);
+        if (tags == null || tags.isEmpty()) {
+            return List.of();
+        }
+        return tags.stream()
+                .map(Object::toString)
+                .filter(s -> s.chars().allMatch(Character::isDigit))
+                .map(Long::parseLong)
+                .distinct()
+                .limit(5)
+                .toList();
     }
 }

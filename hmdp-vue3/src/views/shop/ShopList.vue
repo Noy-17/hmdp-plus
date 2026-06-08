@@ -122,7 +122,14 @@ const queryShops = async () => {
   try {
     const { data } = await getShopList(params.value)
     if (!data) return
-    data.forEach((s) => (s.images = s.images.split(',')[0]))
+    data.forEach((s) => {
+      s.images = s.images.split(',')[0]
+      s.score = Number(s.score) || 0
+      s.avgPrice = Number(s.avgPrice) || 0
+      s.comments = Number(s.comments) || 0
+      s.sold = Number(s.sold) || 0
+      s.distance = s.distance != null ? Number(s.distance) : null
+    })
     shops.value = shops.value.concat(data)
   } catch (error) {
     console.error(error)
@@ -134,7 +141,7 @@ const queryShops = async () => {
 const handleCommand = (type) => {
   console.log('handleCommand', type)
   router.push({
-    path: '/shoplist',
+    path: '/shopList',
     query: {
       type: type.id,
       name: type.name
@@ -145,6 +152,8 @@ const handleCommand = (type) => {
 // 排序和查询
 const sortAndQuery = (sortBy) => {
   params.value.sortBy = sortBy
+  params.value.current = 1
+  shops.value = []
   queryShops()
 }
 

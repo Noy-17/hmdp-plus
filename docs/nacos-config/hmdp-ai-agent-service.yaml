@@ -26,6 +26,9 @@ spring:
     password: ${RABBITMQ_PASSWORD:guest}
     publisher-confirm-type: correlated
     publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
   jackson:
     default-property-inclusion: non_null
   cloud:

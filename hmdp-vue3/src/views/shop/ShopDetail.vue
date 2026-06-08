@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ArrowLeft, ArrowRight, Location, Timer } from '@element-plus/icons-vue'
 import { ElLoading } from 'element-plus'
@@ -329,11 +329,19 @@ const filteredVouchers = computed(() => {
 })
 
 // 初始化
-onMounted(() => {
-  const shopId = route.params.id
+const loadShopData = (shopId) => {
+  if (!shopId) return
   console.log('shopId', shopId)
   queryShopById(shopId)
   queryVoucher(shopId)
+}
+
+onMounted(() => {
+  loadShopData(route.params.id)
+})
+
+watch(() => route.params.id, (newId) => {
+  if (newId) loadShopData(newId)
 })
 </script>
 

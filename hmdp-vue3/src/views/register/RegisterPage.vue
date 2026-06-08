@@ -7,7 +7,7 @@ const disabled = ref(false) // 发送短信按钮
 const codeBtnMsg = ref('发送验证码') // 发送短信按钮提示
 const formRef = ref()
 
-import { userGetCode, userLogin } from '@/api/user'
+import { userGetCode, userLogin, getUser } from '@/api/user'
 
 const form = ref({
   phone: '13686869696',
@@ -51,6 +51,15 @@ const login = async () => {
     const res = await userLogin(form.value)
     console.log('注册成功token:', res.data)
     userStore.setToken(res.data)
+    // 登录后获取用户信息
+    try {
+      const userRes = await getUser()
+      if (userRes.success && userRes.data) {
+        userStore.setUserInfo(userRes.data)
+      }
+    } catch (e) {
+      console.warn('获取用户信息失败', e)
+    }
     ElMessage.success('登录成功')
     router.push('/index')
   } catch (error) {

@@ -39,12 +39,19 @@ public class ShopSearchController {
             @RequestParam("typeId") Integer typeId,
             @RequestParam(value = "current", defaultValue = "1") Integer current,
             @RequestParam(value = "x", required = false) Double x,
-            @RequestParam(value = "y", required = false) Double y) {
+            @RequestParam(value = "y", required = false) Double y,
+            @RequestParam(value = "sortBy", required = false) String sortBy) {
         List<ShopDoc> docs = shopSearchService.searchByTypeAndLocation(
                 typeId.longValue(), x, y,
-                current, SystemConstants.DEFAULT_PAGE_SIZE);
+                current, SystemConstants.DEFAULT_PAGE_SIZE, sortBy);
         emitTypeSearchEvent(typeId.longValue());
         return Result.ok(docs);
+    }
+
+    @GetMapping("/sync/full")
+    public Result<String> fullSync() {
+        shopSearchService.fullSync();
+        return Result.ok("full sync triggered, check logs for progress");
     }
 
     private void emitSearchEvent(String keyword) {
@@ -66,7 +73,7 @@ public class ShopSearchController {
             event.setUserId(getCurrentUserId());
             event.setEventType("SEARCH");
             event.setTargetId(typeId);
-            event.setTargetType("TYPE");
+            event.setTargetType(String.valueOf(typeId));
             event.setTimestamp(System.currentTimeMillis());
             userBehaviorProducer.send(event);
         } catch (Exception ignored) {

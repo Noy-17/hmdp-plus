@@ -47,34 +47,35 @@ public class ShopSearchServiceImpl implements ShopSearchService {
     }
 
     @Override
-    public List<ShopDoc> searchByTypeAndLocation(Long typeId, Double x, Double y, int page, int size) {
+    public List<ShopDoc> searchByTypeAndLocation(Long typeId, Double x, Double y, int page, int size, String sortBy) {
         try {
-            SearchResponse<ShopDoc> response;
-            if (x != null && y != null) {
-                response = esClient.search(s -> s
-                        .index(INDEX)
-                        .query(q -> q.bool(b -> b
-                                .must(m -> m.term(t -> t.field("typeId").value(FieldValue.of(typeId))))
-                                .filter(f -> f.geoDistance(g -> g
-                                        .field("location")
-                                        .location(l -> l.latlon(ll -> ll.lat(y).lon(x)))
-                                        .distance("5000m")))))
-                        .sort(sort -> sort.geoDistance(g -> g
-                                .field("location")
-                                .location(l -> l.latlon(ll -> ll.lat(y).lon(x)))
-                                .order(SortOrder.Asc)))
-                        .from((page - 1) * size)
-                        .size(size),
-                        ShopDoc.class);
-            } else {
-                response = esClient.search(s -> s
-                        .index(INDEX)
-                        .query(q -> q.term(t -> t.field("typeId").value(FieldValue.of(typeId))))
-                        .sort(sort -> sort.field(f -> f.field("score").order(SortOrder.Desc)))
-                        .from((page - 1) * size)
-                        .size(size),
-                        ShopDoc.class);
-            }
+            boolean hasGeo = x != null && y != null;
+            SearchResponse<ShopDoc> response = esClient.search(s -> {
+                s.index(INDEX)
+                 .from((page - 1) * size)
+                 .size(size);
+                if (hasGeo) {
+                    s.query(q -> q.bool(b -> b
+                            .must(m -> m.term(t -> t.field("typeId").value(FieldValue.of(typeId))))
+                            .filter(f -> f.geoDistance(g -> g
+                                    .field("location")
+                                    .location(l -> l.latlon(ll -> ll.lat(y).lon(x)))
+                                    .distance("5000m")))));
+                } else {
+                    s.query(q -> q.term(t -> t.field("typeId").value(FieldValue.of(typeId))));
+                }
+                if ("comments".equals(sortBy)) {
+                    s.sort(sort -> sort.field(f -> f.field("comments").order(SortOrder.Desc)));
+                } else if ("score".equals(sortBy) || !hasGeo) {
+                    s.sort(sort -> sort.field(f -> f.field("score").order(SortOrder.Desc)));
+                } else {
+                    s.sort(sort -> sort.geoDistance(g -> g
+                            .field("location")
+                            .location(l -> l.latlon(ll -> ll.lat(y).lon(x)))
+                            .order(SortOrder.Asc)));
+                }
+                return s;
+            }, ShopDoc.class);
             List<ShopDoc> docs = new ArrayList<>();
             for (Hit<ShopDoc> hit : response.hits().hits()) {
                 ShopDoc doc = hit.source();

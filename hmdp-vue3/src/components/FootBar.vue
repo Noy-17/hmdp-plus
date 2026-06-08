@@ -1,12 +1,17 @@
 <script setup>
 import router from '@/router'
 import { House, Location, ChatDotRound, User } from '@element-plus/icons-vue'
+import { useChatStore } from '@/stores'
+
 defineProps({
   activeBtn: {
     type: Number,
     default: 1
   }
 })
+
+const chatStore = useChatStore()
+
 const toPage = (i) => {
   if (i === 0) {
     router.push('/blogEdit')
@@ -14,6 +19,10 @@ const toPage = (i) => {
     router.push('/InfoHtml')
   } else if (i === 1) {
     router.push('/')
+  } else if (i === 2) {
+    router.push({ path: '/shopList', query: { type: 0, name: '全部' } })
+  } else if (i === 3) {
+    chatStore.togglePanel()
   }
 }
 </script>
@@ -41,7 +50,7 @@ const toPage = (i) => {
     </div>
     <div
       class="foot-box"
-      :class="{ active: activeBtn === 3 }"
+      :class="{ active: activeBtn === 3 || chatStore.isExpanded }"
       @click="toPage(3)"
     >
       <div class="foot-view"><el-icon><ChatDotRound /></el-icon></div>

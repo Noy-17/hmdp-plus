@@ -56,7 +56,19 @@ public class AiVoucherRecommendService {
         try {
             String response = llmClient.chat("你是一个个性化推荐引擎。请仅返回JSON，不要有任何其他内容。", prompt);
             log.info("Voucher LLM response: {}", response);
-            return parseRecommendResults(response);
+            List<RecommendResult> results = parseRecommendResults(response);
+            // 补齐 shopId，让前端能跳转到店铺页购买
+            for (RecommendResult r : results) {
+                if (r.getId() != null && r.getShopId() == null) {
+                    for (VoucherAvailableDto v : availableList) {
+                        if (r.getId().equals(v.getId())) {
+                            r.setShopId(v.getShopId());
+                            break;
+                        }
+                    }
+                }
+            }
+            return results;
         } catch (Exception e) {
             log.error("Voucher recommendation failed: {}", e.getMessage());
             return List.of();

@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores'
 import router from '@/router'
-import { userLogin } from '@/api/user'
+import { userLogin, getUser } from '@/api/user'
 const formRef = ref()
 const userStore = useUserStore()
 const form = ref({
@@ -27,6 +27,15 @@ const login = async () => {
     if (res.data) {
       userStore.setToken(res.data)
       console.log('token已设置:', userStore.getToken())
+      // 登录后获取用户信息
+      try {
+        const userRes = await getUser()
+        if (userRes.success && userRes.data) {
+          userStore.setUserInfo(userRes.data)
+        }
+      } catch (e) {
+        console.warn('获取用户信息失败，稍后从个人中心获取', e)
+      }
       ElMessage.success('登录成功')
       router.push('/index')
     } else {

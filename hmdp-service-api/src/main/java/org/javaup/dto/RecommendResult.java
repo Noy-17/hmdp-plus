@@ -12,4 +12,5 @@ public class RecommendResult {
     private String name;
     private String reason;
     private Double score;
+    private Long shopId;
 }

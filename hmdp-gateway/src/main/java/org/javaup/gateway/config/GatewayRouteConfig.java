@@ -12,7 +12,7 @@ public class GatewayRouteConfig {
     public RouteLocator shopRoute(RouteLocatorBuilder builder) {
         return builder.routes()
                 .route("shop-search", r -> r
-                        .path("/api/shop/of/name", "/api/shop/of/type")
+                        .path("/api/shop/of/name", "/api/shop/of/type", "/api/shop/sync/**")
                         .filters(f -> f.stripPrefix(1))
                         .uri("lb://hmdp-search-service"))
                 .route("ai-agent-service", r -> r
